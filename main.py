@@ -63,7 +63,7 @@ logo = """[38;5;0m.[0m[38;5;0m.[0m[38;5;0m.[0m[38;5;0m.[0m[38;5;0m.[0m
 
 VERSION = "1.0.0-remake"
 
-Utils.cardinal_tools.set_console_title(f"FunPayCardinal Remake v{VERSION}")
+Utils.cardinal_tools.set_console_title(f"FunPayCardinalRemake v{VERSION}")
 
 if getattr(sys, 'frozen', False):
     os.chdir(os.path.dirname(sys.executable))
@@ -94,17 +94,6 @@ print(f"{Fore.RED}{Style.BRIGHT}v{VERSION}{Style.RESET_ALL}\n")  # locale
 if not os.path.exists("configs/_main.cfg"):
     first_setup()
     sys.exit()
-
-if sys.platform == "linux" and os.getenv('FPC_IS_RUNNIG_AS_SERVICE', '0') == '1':
-    import getpass
-
-    pid = str(os.getpid())
-    pidFile = open(f"/run/FunPayCardinal/{getpass.getuser()}/FunPayCardinal.pid", "w")
-    pidFile.write(pid)
-    pidFile.close()
-
-    logger.info(f"$GREENPID файл создан, PID процесса: {pid}")  # locale
-
 
 try:
     logger.info("$MAGENTAЗагружаю конфиг _main.cfg...")  # locale

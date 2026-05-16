@@ -1,4 +1,4 @@
-# FunPayCardinal Remake
+# FunPayCardinalRemake
 
 Модифицированная версия FunPay Cardinal для автоматизации работы с FunPay.
 
@@ -64,7 +64,8 @@ wget https://raw.githubusercontent.com/felusium/FunPayCardinal_Remake/main/insta
 - создает отдельного Linux-пользователя для запуска;
 - создает виртуальное окружение Python;
 - устанавливает Python-зависимости из `requirements.txt`;
-- создает systemd-сервис;
+- создает systemd-сервис `FunPayCardinalRemake`;
+- предлагает добавить сервис в автозагрузку;
 - запускает первичную настройку.
 
 После установки полезные команды будут показаны в консоли.

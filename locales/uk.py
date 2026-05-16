@@ -231,7 +231,7 @@ test_ad_key_created = """✅ Створений одноразовий ключ 
 Надішли команду знизу в чат з користувачем, якому хочеш видати товар.\n
 <code>!автовыдача {}</code>"""
 
-about = """<b>FunPayCardinal Remake v{}</b>"""
+about = """<b>FunPayCardinalRemake v{}</b>"""
 
 sys_info = """<b><u>Дані системи</u></b>
 

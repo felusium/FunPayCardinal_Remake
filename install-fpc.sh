@@ -4,8 +4,9 @@ set -Eeuo pipefail
 REPO_OWNER="felusium"
 REPO_NAME="FunPayCardinal_Remake"
 BRANCH="main"
-APP_DIR_NAME="FunPayCardinal_Remake"
-SERVICE_NAME="FunPayCardinal"
+APP_DIR_NAME="FunPayCardinalRemake"
+SERVICE_NAME="FunPayCardinalRemake"
+OLD_SERVICE_NAME="FunPayCardinal"
 PYTHON_BIN="python3"
 
 RED="\033[1;91m"
@@ -76,6 +77,11 @@ run sudo -u "$APP_USER" "$VENV_DIR/bin/python" -m pip install -U pip
 run sudo -u "$APP_USER" "$VENV_DIR/bin/pip" install -r "$APP_DIR/requirements.txt"
 
 echo -e "${GREEN}Создаю systemd-сервис...${RESET}"
+if systemctl list-unit-files "${OLD_SERVICE_NAME}@.service" >/dev/null 2>&1; then
+  sudo systemctl stop "${OLD_SERVICE_NAME}@${APP_USER}.service" >/dev/null 2>&1 || true
+  sudo systemctl disable "${OLD_SERVICE_NAME}@${APP_USER}.service" >/dev/null 2>&1 || true
+fi
+
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}@.service"
 sudo tee "$SERVICE_FILE" >/dev/null <<EOF
 [Unit]
@@ -87,7 +93,6 @@ Wants=network-online.target
 Type=simple
 User=%i
 WorkingDirectory=/home/%i/${APP_DIR_NAME}
-Environment=FPC_IS_RUNNIG_AS_SERVICE=1
 ExecStart=/home/%i/pyvenv/bin/python /home/%i/${APP_DIR_NAME}/main.py
 Restart=on-failure
 RestartSec=10
@@ -97,6 +102,13 @@ WantedBy=multi-user.target
 EOF
 
 run sudo systemctl daemon-reload
+
+echo -ne "${CYAN}Добавить сервис в автозагрузку? [Y/n]: ${RESET}"
+read -r ENABLE_SERVICE
+ENABLE_SERVICE="${ENABLE_SERVICE:-y}"
+if [[ "$ENABLE_SERVICE" =~ ^([YyДд]|yes|YES|Yes|да|ДА|Да)$ ]]; then
+  run sudo systemctl enable "${SERVICE_NAME}@${APP_USER}.service"
+fi
 
 CONFIG_FILE="$APP_DIR/configs/_main.cfg"
 if [[ ! -f "$CONFIG_FILE" ]]; then

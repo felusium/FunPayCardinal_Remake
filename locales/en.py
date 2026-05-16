@@ -230,7 +230,7 @@ test_ad_key_created = """✅ A one-time key for <code>{}</code> delivery has bee
 Send the command from below to chat with the user to whom you want to deliver the item.\n
 <code>!автовыдача {}</code>"""
 
-about = """<b>FunPayCardinal Remake v{}</b>"""
+about = """<b>FunPayCardinalRemake v{}</b>"""
 
 sys_info = """<b><u>Data summary</u></b>
 
