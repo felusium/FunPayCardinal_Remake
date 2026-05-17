@@ -179,9 +179,7 @@ msg_templates = "📝 Templates"
 msg_more = "➕ More"
 
 # Messages texts
-access_denied = "👋 Hi, <b><i>{}</i></b>!\n\n❌ You are an unauthorized user.\n\n" \
-                "🔑 Send me the <u><b>secret key</b></u> you entered during the initial setup to " \
-                "gain access to the control panel."
+access_denied = "⛔ У тебя нет доступа"
 
 access_granted = "🔓 Access granted!\n\n" \
                  "🔕 Keep in mind that I <b><u>don't send any notifications to this chat</u></b>.\n\n" \
@@ -189,6 +187,10 @@ access_granted = "🔓 Access granted!\n\n" \
                  "⚙️ To open the <i>FunPayCardinalRemake</i> settings menu, send me /menu."
 
 access_granted_notification = "<b>🚨 ATTENTION! 🚨\n\n\n</b>" * 3 + "\n\n\n🔐 \"<a href=\"tg://user?id={1}\"> {0} </a>\" <b>(ID: {1}) has just accessed the Telegram Control Panel! 🔓</b>"
+access_attempt_notification = "⛔ <b>Попытка входа в Telegram-бота</b>\n\n" \
+                              "👤 <b>Имя:</b> {}\n" \
+                              "🆔 <b>ID:</b> <code>{}</code>\n" \
+                              "🔗 <b>Username:</b> {}"
 
 param_disabled = "❌ This parameter is disabled globally and cannot be changed for this lot.\n\n" \
                  "❔ Switching global parameters is available in the global switch menu " \
@@ -428,17 +430,12 @@ cmd_language = "change language"
 cmd_profile = "account statistics"
 cmd_golden_key = "change golden_key"
 cmd_test_lot = "create one-time delivery key"
-cmd_upload_chat_img = "(chat) upload an image to FunPay"
-cmd_upload_offer_img = "(lot) upload an image to FunPay"
 cmd_ban = "add user to the blacklist"
 cmd_unban = "delete user from blacklist"
 cmd_black_list = "blacklist"
 cmd_logs = "download current log-file"
 cmd_del_logs = "delete old log-files"
-cmd_about = "about current version"
-cmd_sys = "system load information"
-cmd_restart = "restart FPC"
-cmd_power_off = "shutdown FPC"
+cmd_restart = "Restart"
 
 # - Variables desc
 v_edit_greeting_text = "Enter the text of the welcome message."

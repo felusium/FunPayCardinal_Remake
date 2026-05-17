@@ -78,15 +78,10 @@ class TGBot:
             "ban": "cmd_ban",
             "unban": "cmd_unban",
             "black_list": "cmd_black_list",
-            "upload_chat_img": "cmd_upload_chat_img",
-            "upload_offer_img": "cmd_upload_offer_img",
             "upload_plugin": "cmd_upload_plugin",
             "test_lot": "cmd_test_lot",
             "logs": "cmd_logs",
-            "about": "cmd_about",
-            "sys": "cmd_sys",
             "del_logs": "cmd_del_logs",
-            "power_off": "cmd_power_off",
         }
         self.__default_notification_settings = {
             utils.NotificationTypes.ad: 1,
@@ -360,6 +355,13 @@ class TGBot:
             self.attempts[m.from_user.id] = self.attempts.get(m.from_user.id, 0) + 1
             text = _("access_denied", m.from_user.username, language=lang)
             kb_links = kb.links(language=lang)
+            full_name = " ".join(filter(None, [m.from_user.first_name, m.from_user.last_name])) or "Без имени"
+            username = f"@{m.from_user.username}" if m.from_user.username else "отсутствует"
+            self.send_notification(
+                text=_("access_attempt_notification", utils.escape(full_name), m.from_user.id,
+                       utils.escape(username)),
+                notification_type=NotificationTypes.critical
+            )
             logger.warning(_("log_access_attempt", m.from_user.username, m.from_user.id))
         self.bot.send_message(m.chat.id, text, reply_markup=kb_links)
 
@@ -1051,7 +1053,6 @@ class TGBot:
                                                                              CBT.CHANGE_GOLDEN_KEY))
         self.cbq_handler(self.update_profile, lambda c: c.data == CBT.UPDATE_PROFILE)
         self.msg_handler(self.act_manual_delivery_test, commands=["test_lot"])
-        self.msg_handler(self.act_upload_image, commands=["upload_chat_img", "upload_offer_img"])
         self.cbq_handler(self.act_edit_greetings_text, lambda c: c.data == CBT.EDIT_GREETINGS_TEXT)
         self.msg_handler(self.edit_greetings_text,
                          func=lambda m: self.check_state(m.chat.id, m.from_user.id, CBT.EDIT_GREETINGS_TEXT))
@@ -1073,10 +1074,7 @@ class TGBot:
         self.msg_handler(self.send_ban_list, commands=["black_list"])
         self.msg_handler(self.send_logs, commands=["logs"])
         self.msg_handler(self.del_logs, commands=["del_logs"])
-        self.msg_handler(self.about, commands=["about"])
-        self.msg_handler(self.send_system_info, commands=["sys"])
         self.msg_handler(self.restart_cardinal, commands=["restart"])
-        self.msg_handler(self.ask_power_off, commands=["power_off"])
         self.cbq_handler(self.send_review_reply_text, lambda c: c.data.startswith(f"{CBT.SEND_REVIEW_REPLY_TEXT}:"))
 
         self.cbq_handler(self.act_send_funpay_message, lambda c: c.data.startswith(f"{CBT.SEND_FP_MESSAGE}:"))
