@@ -533,7 +533,7 @@ log_new_msg = "$MAGENTA┌──$RESET New message in chat with $YELLOW{} (CID: 
 log_sending_greetings = "User $YELLOW{} (CID: {})$RESET wrote for the first time! Sending greetings..."
 log_new_cmd = "Received the command $YELLOW{}$RESET in the chat with the user $YELLOW{} (CID: {})$RESET."
 ntfc_new_order = "💰 <b>New order:</b> <code>{}</code>\n\n<b><i>🙍‍♂️ Buyer:</i></b>  <code>{}</code>\n" \
-                 "<b><i>💵 Order amount:</i></b>  <code>{}</code>\n<b><i>📇 ID:</i></b> <code>#{}</code>\n\n<i>{}</i>"
+                 "<b><i>💵 Order amount:</i></b>  <code>{}</code>\n<b><i>📇 ID:</i></b> <code>#{}</code>{}"
 ntfc_new_order_will_be_delivered = "ℹ️ The product will be delivered as soon as possible."
 ntfc_new_review = "🔮 You received {} for the order <code>{}</code>!\n\n💬<b>Review:</b>\n<code>{}</code>{}"
 ntfc_review_reply_text = "\n\n🗨️<b>Reply:</b> \n<code>{}</code>"

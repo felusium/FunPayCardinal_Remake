@@ -560,13 +560,15 @@ def send_new_order_notification_handler(c: Cardinal, e: NewOrderEvent, *args):
         return
     if e.order.buyer_username in c.blacklist and c.MAIN_CFG["BlockList"].getboolean("blockNewOrderNotification"):
         return
-    if not (config_obj := getattr(e, "config_section_obj")):
-        return
-    if not c.autodelivery_enabled or config_obj.getboolean("disable") or \
-            (c.bl_delivery_enabled and e.order.buyer_username in c.blacklist):
-        return
+    config_obj = getattr(e, "config_section_obj", None)
+    will_be_delivered = bool(
+        config_obj and
+        c.autodelivery_enabled and
+        not config_obj.getboolean("disable") and
+        not (c.bl_delivery_enabled and e.order.buyer_username in c.blacklist)
+    )
 
-    delivery_info = _("ntfc_new_order_will_be_delivered")
+    delivery_info = f"\n\n<i>{_('ntfc_new_order_will_be_delivered')}</i>" if will_be_delivered else ""
     text = _("ntfc_new_order", f"{utils.escape(e.order.description)}, {utils.escape(e.order.subcategory_name)}",
              e.order.buyer_username, f"{e.order.price} {e.order.currency}".strip(), e.order.id, delivery_info)
 
@@ -794,15 +796,17 @@ def update_lots_states(cardinal: Cardinal, event: NewOrderEvent):
         text = f"""🔴 <b>Деактивировал лоты:</b>
         
 <code>{lots}</code>"""
-        Thread(target=cardinal.telegram.send_notification, args=(text,),
-               kwargs={"notification_type": utils.NotificationTypes.lots_deactivate}, daemon=True).start()
+        if cardinal.telegram:
+            Thread(target=cardinal.telegram.send_notification, args=(text,),
+                   kwargs={"notification_type": utils.NotificationTypes.lots_deactivate}, daemon=True).start()
     if restored:
         lots = "\n".join(restored)  # locale
         text = f"""🟢 <b>Активировал лоты:</b>
 
 <code>{lots}</code>"""
-        Thread(target=cardinal.telegram.send_notification, args=(text,),
-               kwargs={"notification_type": utils.NotificationTypes.lots_restore}, daemon=True).start()
+        if cardinal.telegram:
+            Thread(target=cardinal.telegram.send_notification, args=(text,),
+                   kwargs={"notification_type": utils.NotificationTypes.lots_restore}, daemon=True).start()
 
 
 def update_profiles_handler(cardinal: Cardinal, event: NewOrderEvent | OrdersListChangedEvent, *args):
@@ -844,6 +848,8 @@ def send_order_confirmed_notification_handler(cardinal: Cardinal, event: OrderSt
     """
     Отправляет уведомление о подтверждении заказа в Telegram.
     """
+    if not cardinal.telegram:
+        return
     if not event.order.status == types.OrderStatuses.CLOSED:
         return
 

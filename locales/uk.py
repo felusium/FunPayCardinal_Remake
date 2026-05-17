@@ -535,7 +535,7 @@ log_new_msg = "$MAGENTA┌──$RESET Нове повідомлення в пе
 log_sending_greetings = "Користувач $YELLOW{} (CID: {})$RESET написав вперше! Відправляю привітальне повідомлення..."
 log_new_cmd = "Отримано команду $YELLOW{}$RESET у чаті з користувачем $YELLOW{} (CID: {})$RESET."
 ntfc_new_order = "💰 <b>Нове замовлення:</b> <code>{}</code>\n\n<b><i>🙍‍♂️ Покупець:</i></b>  <code>{}</code>\n" \
-                 "<b><i>💵 Сума:</i></b>  <code>{}</code>\n<b><i>📇 ID:</i></b> <code>#{}</code>\n\n<i>{}</i>"
+                 "<b><i>💵 Сума:</i></b>  <code>{}</code>\n<b><i>📇 ID:</i></b> <code>#{}</code>{}"
 ntfc_new_order_will_be_delivered = "ℹ️ Товар буде виданий найближчим часом."
 ntfc_new_review = "🔮 Ви отримали {} за замовлення <code>{}</code>!\n\n💬<b>Відгук:</b>\n<code>{}</code>{}"
 ntfc_review_reply_text = "\n\n🗨️<b>Відповідь:</b> \n<code>{}</code>"
