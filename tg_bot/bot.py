@@ -68,6 +68,7 @@ class TGBot:
         self.notification_settings = utils.load_notification_settings()  # настройки уведомлений.
         self.answer_templates = utils.load_answer_templates()  # заготовки ответов.
         self.authorized_users = utils.load_authorized_users()  # авторизированные пользователи.
+        self.notification_scope = f"bot:{self.cardinal.MAIN_CFG['Telegram']['token'].split(':', 1)[0]}"
 
         self.commands = {
             "menu": "cmd_menu",
@@ -91,6 +92,7 @@ class TGBot:
             utils.NotificationTypes.ad: 1,
             utils.NotificationTypes.announcement: 1
         }
+        self.migrate_notification_settings()
 
     # User states
     def get_state(self, chat_id: int, user_id: int) -> dict | None:
@@ -161,19 +163,68 @@ class TGBot:
             return False
 
     # Notification settings
-    def is_notification_enabled(self, chat_id: int | str, notification_type: str) -> bool:
+    def migrate_notification_settings(self) -> None:
+        """
+        Переносит старые форматы настроек уведомлений в формат
+        {bot_id: {telegram_user_id: {chat_id: {...}}}}, чтобы разные Telegram
+        аккаунты внутри одного бота не делили одни и те же переключатели.
+        """
+        legacy = {
+            chat_id: settings
+            for chat_id, settings in self.notification_settings.items()
+            if not str(chat_id).startswith("bot:")
+        }
+        if not legacy:
+            scoped = self.notification_settings.get(self.notification_scope)
+            if not isinstance(scoped, dict):
+                return
+            scoped_legacy = {
+                chat_id: settings
+                for chat_id, settings in scoped.items()
+                if not str(chat_id).startswith("user:")
+            }
+            if not scoped_legacy:
+                return
+            for chat_id, settings in scoped_legacy.items():
+                scoped[f"user:{chat_id}"] = {str(chat_id): settings}
+                scoped.pop(chat_id, None)
+            utils.save_notification_settings(self.notification_settings)
+            return
+        if self.notification_scope not in self.notification_settings:
+            self.notification_settings[self.notification_scope] = {}
+        scoped = self.notification_settings[self.notification_scope]
+        for chat_id, settings in legacy.items():
+            scoped[f"user:{chat_id}"] = {str(chat_id): settings}
+        for chat_id in legacy:
+            self.notification_settings.pop(chat_id, None)
+        utils.save_notification_settings(self.notification_settings)
+
+    def get_notification_settings(self, user_id: int | str | None = None) -> dict:
+        if self.notification_scope not in self.notification_settings:
+            self.notification_settings[self.notification_scope] = {}
+        scoped = self.notification_settings[self.notification_scope]
+        if user_id is None:
+            return scoped
+        user_key = f"user:{user_id}"
+        if user_key not in scoped:
+            scoped[user_key] = {}
+        return scoped[user_key]
+
+    def is_notification_enabled(self, chat_id: int | str, notification_type: str,
+                                user_id: int | str | None = None) -> bool:
         """
         Включен ли указанный тип уведомлений в указанном чате?
 
         :param chat_id: ID Telegram чата.
         :param notification_type: тип уведомлений.
         """
+        settings = self.get_notification_settings(user_id or chat_id)
         try:
-            return bool(self.notification_settings[str(chat_id)][notification_type])
+            return bool(settings[str(chat_id)][notification_type])
         except KeyError:
             return False
 
-    def toggle_notification(self, chat_id: int, notification_type: str) -> bool:
+    def toggle_notification(self, chat_id: int, notification_type: str, user_id: int | str) -> bool:
         """
         Переключает указанный тип уведомлений в указанном чате и сохраняет настройки уведомлений.
 
@@ -182,14 +233,14 @@ class TGBot:
 
         :return: вкл / выкл указанный тип уведомлений в указанном чате.
         """
+        settings = self.get_notification_settings(user_id)
         chat_id = str(chat_id)
-        if chat_id not in self.notification_settings:
-            self.notification_settings[chat_id] = {}
+        if chat_id not in settings:
+            settings[chat_id] = {}
 
-        self.notification_settings[chat_id][notification_type] = not self.is_notification_enabled(chat_id,
-                                                                                                  notification_type)
+        settings[chat_id][notification_type] = not self.is_notification_enabled(chat_id, notification_type, user_id)
         utils.save_notification_settings(self.notification_settings)
-        return self.notification_settings[chat_id][notification_type]
+        return settings[chat_id][notification_type]
 
     # handler binders
     def is_file_handler(self, m: Message):
@@ -269,16 +320,17 @@ class TGBot:
         """
         Устанавливает настройки уведомлений по умолчанию в новом чате.
         """
-        if str(m.chat.id) in self.notification_settings and m.from_user.id in self.authorized_users and \
-                self.is_notification_enabled(m.chat.id, NotificationTypes.critical):
+        notification_settings = self.get_notification_settings(m.from_user.id)
+        if str(m.chat.id) in notification_settings and m.from_user.id in self.authorized_users and \
+                self.is_notification_enabled(m.chat.id, NotificationTypes.critical, m.from_user.id):
             return
-        elif str(m.chat.id) in self.notification_settings and m.from_user.id in self.authorized_users and not \
-                self.is_notification_enabled(m.chat.id, NotificationTypes.critical):
-            self.notification_settings[str(m.chat.id)][NotificationTypes.critical] = 1
+        elif str(m.chat.id) in notification_settings and m.from_user.id in self.authorized_users and not \
+                self.is_notification_enabled(m.chat.id, NotificationTypes.critical, m.from_user.id):
+            notification_settings[str(m.chat.id)][NotificationTypes.critical] = 1
             utils.save_notification_settings(self.notification_settings)
             return
-        elif str(m.chat.id) not in self.notification_settings:
-            self.notification_settings[str(m.chat.id)] = self.__default_notification_settings.copy()
+        elif str(m.chat.id) not in notification_settings:
+            notification_settings[str(m.chat.id)] = self.__default_notification_settings.copy()
             utils.save_notification_settings(self.notification_settings)
 
     def reg_admin(self, m: Message):
@@ -294,10 +346,12 @@ class TGBot:
                                    notification_type=NotificationTypes.critical, pin=True)
             self.authorized_users[m.from_user.id] = {}
             utils.save_authorized_users(self.authorized_users)
-            if str(m.chat.id) not in self.notification_settings or not self.is_notification_enabled(m.chat.id,
-                                                                                                    NotificationTypes.critical):
-                self.notification_settings[str(m.chat.id)] = self.__default_notification_settings.copy()
-                self.notification_settings[str(m.chat.id)][NotificationTypes.critical] = 1
+            notification_settings = self.get_notification_settings(m.from_user.id)
+            if str(m.chat.id) not in notification_settings or not self.is_notification_enabled(m.chat.id,
+                                                                                               NotificationTypes.critical,
+                                                                                               m.from_user.id):
+                notification_settings[str(m.chat.id)] = self.__default_notification_settings.copy()
+                notification_settings[str(m.chat.id)][NotificationTypes.critical] = 1
                 utils.save_notification_settings(self.notification_settings)
             text = _("access_granted", language=lang)
             kb_links = None
@@ -888,14 +942,14 @@ class TGBot:
         split = c.data.split(":")
         chat_id, notification_type = int(split[1]), split[2]
 
-        result = self.toggle_notification(chat_id, notification_type)
+        result = self.toggle_notification(chat_id, notification_type, c.from_user.id)
         logger.info(_("log_notification_switched", c.from_user.username, c.from_user.id,
                       notification_type, c.message.chat.id, result))
         keyboard = kb.announcements_settings if notification_type in [utils.NotificationTypes.announcement,
                                                                       utils.NotificationTypes.ad] \
             else kb.notifications_settings
         self.bot.edit_message_reply_markup(c.message.chat.id, c.message.id,
-                                           reply_markup=keyboard(self.cardinal, c.message.chat.id))
+                                           reply_markup=keyboard(self.cardinal, c.message.chat.id, c.from_user.id))
         self.bot.answer_callback_query(c.id)
 
     def open_settings_section(self, c: CallbackQuery):
@@ -907,7 +961,8 @@ class TGBot:
         sections = {
             "lang": (_("desc_lang"), kb.language_settings, [self.cardinal]),
             "main": (_("desc_gs"), kb.main_settings, [self.cardinal]),
-            "tg": (_("desc_ns", c.message.chat.id), kb.notifications_settings, [self.cardinal, c.message.chat.id]),
+            "tg": (_("desc_ns", c.message.chat.id), kb.notifications_settings,
+                   [self.cardinal, c.message.chat.id, c.from_user.id]),
             "bl": (_("desc_bl"), kb.blacklist_settings, [self.cardinal]),
             "ar": (_("desc_ar"), skb.AR_SETTINGS, []),
             "ad": (_("desc_ad"), skb.AD_SETTINGS, []),
@@ -1061,35 +1116,45 @@ class TGBot:
         if keyboard is not None:
             kwargs["reply_markup"] = keyboard
         to_delete = []
-        for chat_id in self.notification_settings:
-            if notification_type != utils.NotificationTypes.important_announcement and \
-                    not self.is_notification_enabled(chat_id, notification_type):
+        notification_settings = self.get_notification_settings()
+        sent_chats = set()
+        for user_settings in notification_settings.values():
+            if not isinstance(user_settings, dict):
                 continue
+            for chat_id, chat_settings in user_settings.items():
+                if chat_id in sent_chats:
+                    continue
+                if notification_type != utils.NotificationTypes.important_announcement and \
+                        not bool(chat_settings.get(notification_type)):
+                    continue
 
-            try:
-                if photo:
-                    msg = self.bot.send_photo(chat_id, photo, text, **kwargs)
-                else:
-                    msg = self.bot.send_message(chat_id, text, **kwargs)
+                try:
+                    if photo:
+                        msg = self.bot.send_photo(chat_id, photo, text, **kwargs)
+                    else:
+                        msg = self.bot.send_message(chat_id, text, **kwargs)
 
-                if notification_type == utils.NotificationTypes.bot_start:
-                    self.init_messages.append((msg.chat.id, msg.id))
+                    sent_chats.add(chat_id)
+                    if notification_type == utils.NotificationTypes.bot_start:
+                        self.init_messages.append((msg.chat.id, msg.id))
 
-                if pin:
-                    self.bot.pin_chat_message(msg.chat.id, msg.id)
-            except Exception as e:
-                logger.error(_("log_tg_notification_error", chat_id))
-                logger.debug("TRACEBACK", exc_info=True)
-                if isinstance(e, ApiTelegramException) and (
-                        e.result.status_code == 403 or e.result.status_code == 400 and
-                        (e.result_json.get('description') in \
-                         ("Bad Request: group chat was upgraded to a supergroup chat", "Bad Request: chat not found"))):
-                    to_delete.append(chat_id)
-                continue
+                    if pin:
+                        self.bot.pin_chat_message(msg.chat.id, msg.id)
+                except Exception as e:
+                    logger.error(_("log_tg_notification_error", chat_id))
+                    logger.debug("TRACEBACK", exc_info=True)
+                    if isinstance(e, ApiTelegramException) and (
+                            e.result.status_code == 403 or e.result.status_code == 400 and
+                            (e.result_json.get('description') in \
+                             ("Bad Request: group chat was upgraded to a supergroup chat",
+                              "Bad Request: chat not found"))):
+                        to_delete.append(chat_id)
+                    continue
         for chat_id in to_delete:
-            if chat_id in self.notification_settings:
-                del self.notification_settings[chat_id]
-                utils.save_notification_settings(self.notification_settings)
+            for user_settings in notification_settings.values():
+                if isinstance(user_settings, dict) and chat_id in user_settings:
+                    del user_settings[chat_id]
+            utils.save_notification_settings(self.notification_settings)
 
     def add_command_to_menu(self, command: str, help_text: str) -> None:
         """
