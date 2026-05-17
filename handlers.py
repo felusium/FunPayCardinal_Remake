@@ -868,7 +868,7 @@ def send_bot_started_notification_handler(c: Cardinal, *args):
     if c.telegram is None:
         return
     text = _("fpc_init", c.VERSION, c.account.username, c.account.id,
-             c.balance.total_usd, c.balance.total_eur, c.account.active_sales)
+             c.balance.total_rub, c.balance.total_usd, c.balance.total_eur, c.account.active_sales)
     for i in c.telegram.init_messages:
         try:
             c.telegram.bot.edit_message_text(text, i[0], i[1])

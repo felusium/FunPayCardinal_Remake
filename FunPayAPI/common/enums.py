@@ -128,7 +128,7 @@ class Currency(Enum):
         if self == Currency.USD:
             return "$"
         if self == Currency.RUB:
-            return ""
+            return "₽"
         if self == Currency.EUR:
             return "€"
         return "¤"

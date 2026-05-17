@@ -249,6 +249,7 @@ def generate_profile_text(cardinal: Cardinal) -> str:
 <b>ID:</b> <code>{account.id}</code>
 <b>Незавершенных заказов:</b> <code>{account.active_sales}</code>
 <b>Баланс:</b> 
+    <b>₽:</b> <code>{balance.total_rub}₽</code>, доступно для вывода <code>{balance.available_rub}₽</code>.
     <b>$:</b> <code>{balance.total_usd}$</code>, доступно для вывода <code>{balance.available_usd}$</code>.
     <b>€:</b> <code>{balance.total_eur}€</code>, доступно для вывода <code>{balance.available_eur}€</code>.
 

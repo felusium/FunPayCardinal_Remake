@@ -218,7 +218,7 @@ bot_started = """✅ Telegram bot is running!\n
 fpc_init = """✅ <b><u>FunPayCardinalRemake initialized!</u></b>\n
 ℹ️ <b><i>Version:</i></b> <code>{}</code>
 👑 <b><i>Account:</i></b>  <code>{}</code> | <code>{}</code>
-💰 <b><i>Balance:</i></b> <code>{}$, {}€</code>
+💰 <b><i>Balance:</i></b> <code>{}₽, {}$, {}€</code>
 📊 <b><i>Active orders:</i></b>  <code>{}</code>
 
 """
@@ -388,6 +388,7 @@ pl_not_found_err = "❌ Plugin with UUID <code>{}</code> not found."
 pl_file_not_found_err = "❌  File <code>{}</code> not found.\nRestart <i>FPC</i> with command /restart."
 pl_commands_list = "<b><i>{}</i></b> plugin commands list."
 pl_author = "Dev"
+pl_new = "Send the plugin file."
 
 au_user_settings = "Settings for user {}"
 # - Menus desc

@@ -219,7 +219,7 @@ bot_started = """✅ Telegram-бот запущен!\n
 fpc_init = """✅ <b><u>FunPayCardinalRemake инициализирован!</u></b>\n
 ℹ️ <b><i>Версия:</i></b> <code>{}</code>
 👑 <b><i>Аккаунт:</i></b>  <code>{}</code> | <code>{}</code>
-💰 <b><i>Баланс:</i></b> <code>{}$, {}€</code>
+💰 <b><i>Баланс:</i></b> <code>{}₽, {}$, {}€</code>
 📊 <b><i>Активные заказы:</i></b>  <code>{}</code>
 
 """
@@ -390,6 +390,7 @@ pl_not_found_err = "❌ Не удалось найти плагин с UUID <cod
 pl_file_not_found_err = "❌ Не удалось обнаружить файл <code>{}</code>.\nПерезагрузите <i>FPC</i> с помощью команды /restart."
 pl_commands_list = "Команды плагина <b><i>{}</i></b>."
 pl_author = "Автор"
+pl_new = "Отправь файл плагина."
 
 au_user_settings = "Настройки для пользователя {}"
 # - Описания меню

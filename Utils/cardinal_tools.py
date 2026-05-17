@@ -288,7 +288,7 @@ def create_greeting_text(cardinal: Cardinal):
     lines = [
         f"* {greetings}, $CYAN{account.username}.",
         f"* Ваш ID: $YELLOW{account.id}.",
-        f"* Ваш текущий баланс: $MAGENTA{balance.total_usd} USD $RESET| $YELLOW{balance.total_eur} EUR",
+        f"* Ваш текущий баланс: $CYAN{balance.total_rub} RUB $RESET| $MAGENTA{balance.total_usd} USD $RESET| $YELLOW{balance.total_eur} EUR",
         f"* Текущие незавершенные сделки: $YELLOW{account.active_sales}.",
         f"* Удачной торговли!"
     ]
