@@ -272,7 +272,7 @@ def review_reply_settings(c: Cardinal):
     return kb
 
 
-def notifications_settings(c: Cardinal, chat_id: int) -> K:
+def notifications_settings(c: Cardinal, chat_id: int, user_id: int | str | None = None) -> K:
     """
     Генерирует клавиатуру настроек уведомлений (CBT.CATEGORY:telegram).
 
@@ -285,7 +285,7 @@ def notifications_settings(c: Cardinal, chat_id: int) -> K:
     n = NotificationTypes
 
     def l(nt):
-        return '🔔' if c.telegram.is_notification_enabled(chat_id, nt) else '🔕'
+        return '🔔' if c.telegram.is_notification_enabled(chat_id, nt, user_id) else '🔕'
 
     kb = K() \
         .row(B(_("ns_new_msg", l(n.new_message)), None, f"{p}:{n.new_message}"),
@@ -303,7 +303,7 @@ def notifications_settings(c: Cardinal, chat_id: int) -> K:
     return kb
 
 
-def announcements_settings(c: Cardinal, chat_id: int):
+def announcements_settings(c: Cardinal, chat_id: int, user_id: int | str | None = None):
     """
     Генерирует клавиатуру настроек уведомлений объявлений.
 
@@ -316,7 +316,7 @@ def announcements_settings(c: Cardinal, chat_id: int):
     n = NotificationTypes
 
     def l(nt):
-        return '🔔' if c.telegram.is_notification_enabled(chat_id, nt) else '🔕'
+        return '🔔' if c.telegram.is_notification_enabled(chat_id, nt, user_id) else '🔕'
 
     kb = K() \
         .add(B(_("an_an", l(n.announcement)), None, f"{p}:{n.announcement}")) \
