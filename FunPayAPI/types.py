@@ -1476,10 +1476,10 @@ class Balance:
     """
     Данный класс представляет информацию о балансе аккаунта.
 
-    :param total_rub: общий рублёвый баланс.
+    :param total_rub: total balance for the first wallet currency.
     :type total_rub: :obj:`float`
 
-    :param available_rub: доступный к выводу рублёвый баланс.
+    :param available_rub: available balance for the first wallet currency.
     :type available_rub: :obj:`float`
 
     :param total_usd: общий долларовый баланс.
@@ -1495,9 +1495,9 @@ class Balance:
     def __init__(self, total_rub: float, available_rub: float, total_usd: float, available_usd: float,
                  total_eur: float, available_eur: float):
         self.total_rub: float = total_rub
-        """Общий рублёвый баланс."""
+        """Total balance for the first wallet currency."""
         self.available_rub: float = available_rub
-        """Доступный к выводу рублёвый баланс."""
+        """Available balance for the first wallet currency."""
         self.total_usd: float = total_usd
         """Общий долларовый баланс."""
         self.available_usd: float = available_usd
@@ -1574,5 +1574,4 @@ class Wallet:
         self.is_masked: bool = is_masked
         self.type_text: str = type_text
         self.data_n: int | None = data_n
-
 

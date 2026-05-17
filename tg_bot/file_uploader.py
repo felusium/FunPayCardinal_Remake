@@ -1,4 +1,4 @@
-"""
+﻿"""
 В данном модуле реализован загрузчик файлов из телеграм чата.
 """
 
@@ -247,18 +247,17 @@ def init_uploader(cardinal: Cardinal):
         tg.clear_state(m.chat.id, m.from_user.id, True)
         if not check_file(tg, m, type_="py"):
             return
-        if not download_file(tg, m, f"{utils.escape(m.document.file_name)}",
-                             custom_path=f"plugins"):
+        if not download_file(tg, m, f"{utils.escape(m.document.file_name)}", custom_path="plugins"):
             return
 
         logger.info(f"[IMPORTANT] Пользователь $MAGENTA@{m.from_user.username} (id: {m.from_user.id})$RESET "
                     f"загрузил в бота плагин $YELLOWplugins/{m.document.file_name}$RESET.")
 
         keyboard = types.InlineKeyboardMarkup() \
-            .add(Button("◀️Назад", callback_data=f"{CBT.PLUGINS_LIST}:{offset}"))
+            .add(Button("Назад", callback_data=f"{CBT.PLUGINS_LIST}:{offset}"))
         bot.send_message(m.chat.id,
                          f"✅ Плагин <code>{utils.escape(m.document.file_name)}</code> успешно загружен.\n\n"
-                         f"⚠️Чтобы плагин активировался, <u><b>перезагрузите FPC!</b></u> (/restart)",
+                         f"Чтобы плагин активировался, перезапустите бота командой /restart.",
                          reply_markup=keyboard)
 
     def send_funpay_image(m: types.Message):
@@ -278,7 +277,7 @@ def init_uploader(cardinal: Cardinal):
             file_info = tg.bot.get_file(photo.file_id)
             file = tg.bot.download_file(file_info.file_path)
             image_id = cardinal.account.upload_image(file, type_="chat")
-            result = cardinal.send_message(chat_id, f"$photo={image_id}", username, watermark=False)
+            result = cardinal.send_message(chat_id, f"$photo={image_id}", username)
             if not result:
                 raise Exception("Нету сообщений")
             tg.bot.reply_to(m, f'✅ Сообщение отправлено в переписку '
@@ -327,28 +326,6 @@ def init_uploader(cardinal: Cardinal):
     def upload_offer_image(m: types.Message):
         upload_image(m, type_="offer")
 
-    def upload_backup(m: types.Message):
-        tg.clear_state(m.chat.id, m.from_user.id, True)
-        if not m.document:
-            tg.bot.send_message(m.chat.id, "❌ Файл не обнаружен.")
-            return
-        if not m.document.file_name.endswith(".zip"):
-            tg.bot.send_message(m.chat.id, f"❌ Неправильный формат файла: "
-                                           f"<b><u>.{m.document.file_name.split('.')[-1]}</u></b> "
-                                           f"(вместо <b><u>.zip</u></b>)")
-            return
-        if not download_file(tg, m, "backup.zip"):
-            return
-        if not updater.extract_backup_archive():
-            tg.bot.send_message(m.chat.id, "❌ Возникла ошибка при распаковке архива.")
-            return
-        tg.bot.send_message(m.chat.id, "✅ Бекап загружен.")
-
-        if not updater.install_backup():
-            tg.bot.send_message(m.chat.id, "❌ Возникла ошибка при переносе файлов.")
-            return
-        tg.bot.send_message(m.chat.id, "✅ Бекап использован. Используй команду /restart.")
-
     tg.cbq_handler(act_upload_products_file, lambda c: c.data == CBT.UPLOAD_PRODUCTS_FILE)
     tg.cbq_handler(act_upload_auto_response_config, lambda c: c.data == "upload_auto_response_config")
     tg.cbq_handler(act_upload_auto_delivery_config, lambda c: c.data == "upload_auto_delivery_config")
@@ -362,7 +339,6 @@ def init_uploader(cardinal: Cardinal):
     tg.file_handler(CBT.SEND_FP_MESSAGE, send_funpay_image)
     tg.file_handler(CBT.UPLOAD_CHAT_IMAGE, upload_chat_image)
     tg.file_handler(CBT.UPLOAD_OFFER_IMAGE, upload_offer_image)
-    tg.file_handler(CBT.UPLOAD_BACKUP, upload_backup)
 
 
 BIND_TO_PRE_INIT = [init_uploader]

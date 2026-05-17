@@ -1,4 +1,4 @@
-"""
+﻿"""
 CBT - CallBack Texts. В данном модуле расписаны все CallBack'и для Telegram клавиатуры (+ User-state'ы)
 """
 
@@ -425,10 +425,6 @@ UPLOAD_OFFER_IMAGE = "upload_offer_image"
 User-state: ожидается сообщение с изображением для выгрузки на сервер FunPay (лот).
 """
 
-UPLOAD_BACKUP = "upload_backup"
-"""
-User-state: ожидается сообщение с бэкапом.
-"""
 
 UPDATE_PROFILE = "39"
 """
@@ -475,6 +471,14 @@ PLUGINS_LIST = "44"
 """
 Callback для открытия списка плагинов.
 Использование: CBT.PLUGINS_LIST:offset
+
+offset: int - смещение списка плагинов.
+"""
+
+UPLOAD_PLUGIN = "52"
+"""
+Callback для активации режима ожидания отправки файла-плагина.
+Использование: CBT.UPLOAD_PLUGIN:offset
 
 offset: int - смещение списка плагинов.
 """
@@ -542,18 +546,6 @@ UUID: str - UUID плагина.
 offset: int - смещение списка плагинов.
 """
 
-UPLOAD_PLUGIN = "52"
-"""
-Callback для активации режима ожидания отправки файла-плагина.
-Использование: CBT.UPLOAD_PLUGIN:offset
-
-offset: int - смещение списка плагинов.
-
-
-User-state: ожидается файл-плагин.
-data:
-offset: int - смещение списка плагинов.
-"""
 
 PARAM_DISABLED = "53"
 """

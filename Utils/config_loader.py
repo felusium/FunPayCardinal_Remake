@@ -1,5 +1,5 @@
-"""
-В данном модуле написаны функции для валидации конфигов.
+﻿"""
+Р’ РґР°РЅРЅРѕРј РјРѕРґСѓР»Рµ РЅР°РїРёСЃР°РЅС‹ С„СѓРЅРєС†РёРё РґР»СЏ РІР°Р»РёРґР°С†РёРё РєРѕРЅС„РёРіРѕРІ.
 """
 import configparser
 from configparser import ConfigParser, SectionProxy
@@ -15,15 +15,15 @@ from Utils.cardinal_tools import hash_password, build_proxy
 def check_param(param_name: str, section: SectionProxy, valid_values: list[str | None] | None = None,
                 raise_if_not_exists: bool = True) -> str | None:
     """
-    Проверяет, существует ли в переданной секции указанный параметр и если да, валидно ли его значение.
+    РџСЂРѕРІРµСЂСЏРµС‚, СЃСѓС‰РµСЃС‚РІСѓРµС‚ Р»Рё РІ РїРµСЂРµРґР°РЅРЅРѕР№ СЃРµРєС†РёРё СѓРєР°Р·Р°РЅРЅС‹Р№ РїР°СЂР°РјРµС‚СЂ Рё РµСЃР»Рё РґР°, РІР°Р»РёРґРЅРѕ Р»Рё РµРіРѕ Р·РЅР°С‡РµРЅРёРµ.
 
-    :param param_name: название параметра.
-    :param section: объект секции.
-    :param valid_values: валидные значения. Если None, любая строка - валидное значение.
-    :param raise_if_not_exists: возбуждать ли исключение, если параметр не найден.
+    :param param_name: РЅР°Р·РІР°РЅРёРµ РїР°СЂР°РјРµС‚СЂР°.
+    :param section: РѕР±СЉРµРєС‚ СЃРµРєС†РёРё.
+    :param valid_values: РІР°Р»РёРґРЅС‹Рµ Р·РЅР°С‡РµРЅРёСЏ. Р•СЃР»Рё None, Р»СЋР±Р°СЏ СЃС‚СЂРѕРєР° - РІР°Р»РёРґРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ.
+    :param raise_if_not_exists: РІРѕР·Р±СѓР¶РґР°С‚СЊ Р»Рё РёСЃРєР»СЋС‡РµРЅРёРµ, РµСЃР»Рё РїР°СЂР°РјРµС‚СЂ РЅРµ РЅР°Р№РґРµРЅ.
 
-    :return: Значение ключа, если ключ найден и его значение валидно. Если ключ не найден и
-    raise_ex_if_not_exists == False - возвращает None. В любом другом случае возбуждает исключения.
+    :return: Р—РЅР°С‡РµРЅРёРµ РєР»СЋС‡Р°, РµСЃР»Рё РєР»СЋС‡ РЅР°Р№РґРµРЅ Рё РµРіРѕ Р·РЅР°С‡РµРЅРёРµ РІР°Р»РёРґРЅРѕ. Р•СЃР»Рё РєР»СЋС‡ РЅРµ РЅР°Р№РґРµРЅ Рё
+    raise_ex_if_not_exists == False - РІРѕР·РІСЂР°С‰Р°РµС‚ None. Р’ Р»СЋР±РѕРј РґСЂСѓРіРѕРј СЃР»СѓС‡Р°Рµ РІРѕР·Р±СѓР¶РґР°РµС‚ РёСЃРєР»СЋС‡РµРЅРёСЏ.
     """
     if param_name not in list(section.keys()):
         if raise_if_not_exists:
@@ -32,7 +32,7 @@ def check_param(param_name: str, section: SectionProxy, valid_values: list[str |
 
     value = section[param_name].strip()
 
-    # Если значение пустое ("", оно не может быть None)
+    # Р•СЃР»Рё Р·РЅР°С‡РµРЅРёРµ РїСѓСЃС‚РѕРµ ("", РѕРЅРѕ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ None)
     if not value:
         if valid_values and None in valid_values:
             return value
@@ -45,11 +45,11 @@ def check_param(param_name: str, section: SectionProxy, valid_values: list[str |
 
 def create_config_obj(config_path: str) -> ConfigParser:
     """
-    Создает объект конфига с нужными настройками.
+    РЎРѕР·РґР°РµС‚ РѕР±СЉРµРєС‚ РєРѕРЅС„РёРіР° СЃ РЅСѓР¶РЅС‹РјРё РЅР°СЃС‚СЂРѕР№РєР°РјРё.
 
-    :param config_path: путь до файла конфига.
+    :param config_path: РїСѓС‚СЊ РґРѕ С„Р°Р№Р»Р° РєРѕРЅС„РёРіР°.
 
-    :return: объект конфига.
+    :return: РѕР±СЉРµРєС‚ РєРѕРЅС„РёРіР°.
     """
     config = ConfigParser(delimiters=(":",), interpolation=None)
     config.optionxform = str
@@ -59,11 +59,11 @@ def create_config_obj(config_path: str) -> ConfigParser:
 
 def load_main_config(config_path: str):
     """
-    Парсит и проверяет на правильность основной конфиг.
+    РџР°СЂСЃРёС‚ Рё РїСЂРѕРІРµСЂСЏРµС‚ РЅР° РїСЂР°РІРёР»СЊРЅРѕСЃС‚СЊ РѕСЃРЅРѕРІРЅРѕР№ РєРѕРЅС„РёРі.
 
-    :param config_path: путь до основного конфига.
+    :param config_path: РїСѓС‚СЊ РґРѕ РѕСЃРЅРѕРІРЅРѕРіРѕ РєРѕРЅС„РёРіР°.
 
-    :return: спарсеный основной конфиг.
+    :return: СЃРїР°СЂСЃРµРЅС‹Р№ РѕСЃРЅРѕРІРЅРѕР№ РєРѕРЅС„РёРі.
     """
     config = create_config_obj(config_path)
     values = {
@@ -116,7 +116,6 @@ def load_main_config(config_path: str):
         },
 
         "OrderConfirm": {
-            "watermark": ["0", "1"],
             "sendReply": ["0", "1"],
             "replyText": "any"
         },
@@ -141,7 +140,6 @@ def load_main_config(config_path: str):
         },
 
         "Other": {
-            "watermark": "any+empty",
             "requestsDelay": [str(i) for i in range(1, 101)],
             "language": ["ru", "en", "uk"]
         }
@@ -183,11 +181,6 @@ def load_main_config(config_path: str):
                 config.set("Greetings", "greetingsCooldown", "2")
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)
-            elif section_name == "OrderConfirm" and param_name == "watermark" and param_name not in config[
-                section_name]:
-                config.set("OrderConfirm", "watermark", "1")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
             elif section_name == "FunPay" and param_name == "keepSentMessagesUnread" and \
                     param_name not in config[section_name]:
                 config.set("FunPay", "keepSentMessagesUnread", "0")
@@ -212,11 +205,6 @@ def load_main_config(config_path: str):
             elif section_name == "FunPay" and param_name == "locale" and \
                     param_name not in config[section_name]:
                 config.set(section_name, "locale", "ru")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
-            elif section_name == "Other" and param_name == "watermark" and \
-                    param_name in config[section_name] and "𝑪𝒂𝒓𝒅𝒊𝒏𝒂𝒍" in config[section_name][param_name]:
-                config.set(section_name, param_name, "🐦")
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)
             elif section_name == "Greetings" and param_name == "onlyNewChats" and param_name not in config[
@@ -259,11 +247,11 @@ def load_main_config(config_path: str):
 
 def load_auto_response_config(config_path: str):
     """
-    Парсит и проверяет на правильность конфиг команд.
+    РџР°СЂСЃРёС‚ Рё РїСЂРѕРІРµСЂСЏРµС‚ РЅР° РїСЂР°РІРёР»СЊРЅРѕСЃС‚СЊ РєРѕРЅС„РёРі РєРѕРјР°РЅРґ.
 
-    :param config_path: путь до конфига команд.
+    :param config_path: РїСѓС‚СЊ РґРѕ РєРѕРЅС„РёРіР° РєРѕРјР°РЅРґ.
 
-    :return: спарсеный конфиг команд.
+    :return: СЃРїР°СЂСЃРµРЅС‹Р№ РєРѕРЅС„РёРі РєРѕРјР°РЅРґ.
     """
     try:
         config = create_config_obj(config_path)
@@ -304,11 +292,11 @@ def load_auto_response_config(config_path: str):
 
 def load_raw_auto_response_config(config_path: str):
     """
-    Загружает исходный конфиг автоответчика.
+    Р—Р°РіСЂСѓР¶Р°РµС‚ РёСЃС…РѕРґРЅС‹Р№ РєРѕРЅС„РёРі Р°РІС‚РѕРѕС‚РІРµС‚С‡РёРєР°.
 
-    :param config_path: путь до конфига команд.
+    :param config_path: РїСѓС‚СЊ РґРѕ РєРѕРЅС„РёРіР° РєРѕРјР°РЅРґ.
 
-    :return: спарсеный конфиг команд.
+    :return: СЃРїР°СЂСЃРµРЅС‹Р№ РєРѕРЅС„РёРі РєРѕРјР°РЅРґ.
     """
     config = create_config_obj(config_path)
     for raw_commands in config.sections():
@@ -319,11 +307,11 @@ def load_raw_auto_response_config(config_path: str):
 
 def load_auto_delivery_config(config_path: str):
     """
-    Парсит и проверяет на правильность конфиг автовыдачи.
+    РџР°СЂСЃРёС‚ Рё РїСЂРѕРІРµСЂСЏРµС‚ РЅР° РїСЂР°РІРёР»СЊРЅРѕСЃС‚СЊ РєРѕРЅС„РёРі Р°РІС‚РѕРІС‹РґР°С‡Рё.
 
-    :param config_path: путь до конфига автовыдачи.
+    :param config_path: РїСѓС‚СЊ РґРѕ РєРѕРЅС„РёРіР° Р°РІС‚РѕРІС‹РґР°С‡Рё.
 
-    :return: спарсеный конфиг товаров для автовыдачи.
+    :return: СЃРїР°СЂСЃРµРЅС‹Р№ РєРѕРЅС„РёРі С‚РѕРІР°СЂРѕРІ РґР»СЏ Р°РІС‚РѕРІС‹РґР°С‡Рё.
     """
     try:
         config = create_config_obj(config_path)
@@ -339,17 +327,17 @@ def load_auto_delivery_config(config_path: str):
             check_param("disableAutoDisable", config[lot_title], valid_values=["0", "1"], raise_if_not_exists=False)
             check_param("disableAutoDelivery", config[lot_title], valid_values=["0", "1"], raise_if_not_exists=False)
             if products_file_name is None:
-                # Если данного параметра нет, то в текущем лоте более нечего проверять -> переход на след. итерацию.
+                # Р•СЃР»Рё РґР°РЅРЅРѕРіРѕ РїР°СЂР°РјРµС‚СЂР° РЅРµС‚, С‚Рѕ РІ С‚РµРєСѓС‰РµРј Р»РѕС‚Рµ Р±РѕР»РµРµ РЅРµС‡РµРіРѕ РїСЂРѕРІРµСЂСЏС‚СЊ -> РїРµСЂРµС…РѕРґ РЅР° СЃР»РµРґ. РёС‚РµСЂР°С†РёСЋ.
                 continue
         except (ParamNotFoundError, EmptyValueError, ValueNotValidError) as e:
             raise ConfigParseError(config_path, lot_title, e)
 
-        # Проверяем, существует ли файл.
+        # РџСЂРѕРІРµСЂСЏРµРј, СЃСѓС‰РµСЃС‚РІСѓРµС‚ Р»Рё С„Р°Р№Р».
         if not os.path.exists(f"storage/products/{products_file_name}"):
             raise ConfigParseError(config_path, lot_title,
                                    ProductsFileNotFoundError(f"storage/products/{products_file_name}"))
 
-        # Проверяем, есть ли хотя бы 1 переменная $product в тексте response.
+        # РџСЂРѕРІРµСЂСЏРµРј, РµСЃС‚СЊ Р»Рё С…РѕС‚СЏ Р±С‹ 1 РїРµСЂРµРјРµРЅРЅР°СЏ $product РІ С‚РµРєСЃС‚Рµ response.
         if "$product" not in lot_response:
             raise ConfigParseError(config_path, lot_title, NoProductVarError())
     return config

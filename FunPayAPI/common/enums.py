@@ -118,7 +118,7 @@ class Currency(Enum):
     USD = 0
     """Доллар"""
     RUB = 1
-    """Рубль"""
+    """RUB"""
     EUR = 2
     """Евро"""
     UNKNOWN = 3
@@ -128,7 +128,7 @@ class Currency(Enum):
         if self == Currency.USD:
             return "$"
         if self == Currency.RUB:
-            return "₽"
+            return ""
         if self == Currency.EUR:
             return "€"
         return "¤"

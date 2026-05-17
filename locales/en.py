@@ -121,7 +121,6 @@ gr_edit_message = "✏️ Change the text of the welcome message"
 gr_edit_cooldown = "⏱️ Cooldown: {} days"
 
 # Order confirmation response settings
-oc_watermark = "{} Message watermark"
 oc_send_reply = "{} Send message"
 oc_edit_message = "✏️ Change the text of the message"
 
@@ -187,7 +186,7 @@ access_denied = "👋 Hi, <b><i>{}</i></b>!\n\n❌ You are an unauthorized user.
 access_granted = "🔓 Access granted!\n\n" \
                  "🔕 Keep in mind that I <b><u>don't send any notifications to this chat</u></b>.\n\n" \
                  "🔔 You can set up notifications for <b><u>this chat</u></b> in the settings menu.\n\n" \
-                 "⚙️ To open the <i>FunPay Cardinal</i> settings menu, send me /menu."
+                 "⚙️ To open the <i>FunPayCardinalRemake</i> settings menu, send me /menu."
 
 access_granted_notification = "<b>🚨 ATTENTION! 🚨\n\n\n</b>" * 3 + "\n\n\n🔐 \"<a href=\"tg://user?id={1}\"> {0} </a>\" <b>(ID: {1}) has just accessed the Telegram Control Panel! 🔓</b>"
 
@@ -212,14 +211,14 @@ old_mode_help = """<b>New Message Receiving Mode</b>
 
 bot_started = """✅ Telegram bot is running!\n
 ✅ You can <b><u>customize configurations</u></b> and <b><u>make full use of the <i>Telegram</i> bot's functionality.</u></b>.\n
-❌ <i>FunPay Cardinal</i> is not initialized yet and none of its functions work.\n
-🔃 As soon as <i>FunPay Cardinal</i> is initialized, this message will change.\n
+❌ <i>FunPayCardinalRemake</i> is not initialized yet and none of its functions work.\n
+🔃 As soon as <i>FunPayCardinalRemake</i> is initialized, this message will change.\n
 📋 If <i>FPC</i> does not initialize for a long time, check the logs with /logs"""
 
-fpc_init = """✅ <b><u>FunPay Cardinal initialized!</u></b>\n
+fpc_init = """✅ <b><u>FunPayCardinalRemake initialized!</u></b>\n
 ℹ️ <b><i>Version:</i></b> <code>{}</code>
 👑 <b><i>Account:</i></b>  <code>{}</code> | <code>{}</code>
-💰 <b><i>Balance:</i></b> <code>{}₽, {}$, {}€</code>
+💰 <b><i>Balance:</i></b> <code>{}$, {}€</code>
 📊 <b><i>Active orders:</i></b>  <code>{}</code>
 
 """
@@ -263,38 +262,16 @@ proxy_format = "❌ Proxies must be in the format <u>login:password@ip:port</u> 
 proxy_adding_error = "❌ There was an error while adding the proxy."
 proxy_undeletable = "❌ This proxy cannot be deleted as it is currently in use."
 
-act_edit_watermark = "Enter a new watermark text. For example:\n{}\n" \
-                     "<code>𝓕𝓾𝓷𝓟𝓪𝔂 𝓒𝓪𝓻𝓭𝓲𝓷𝓪𝓵</code>\n" \
-                     "<code>𝔽𝕦𝕟ℙ𝕒𝕪 ℂ𝕒𝕣𝕕𝕚𝕟𝕒𝕝</code>\n<code>ＦｕｎＰａｙ Ｃａｒｄｉｎａｌ</code>\n" \
-                     "<code>ꜰᴜɴᴘᴀʏ ᴄᴀʀᴅɪɴᴀʟ</code>\n<code>🄵🅄🄽🄿🄰🅈 🄲🄰🅁🄳🄸🄽🄰🄻</code>\n" \
-                     "<code>ⒻⓤⓝⓅⓐⓨ Ⓒⓐⓡⓓⓘⓝⓐⓛ</code>\n<code>𝐅𝐮𝐧𝐏𝐚𝐲 𝐂𝐚𝐫𝐝𝐢𝐧𝐚𝐥</code>\n" \
-                     "<code>𝗙𝘂𝗻𝗣𝗮𝘆 𝗖𝗮𝗿𝗱𝗶𝗻𝗮𝗹</code>\n<code>𝘍𝘶𝘯𝘗𝘢𝘺 𝘊𝘢𝘳𝘥𝘪𝘯𝘢𝘭</code>\n" \
-                     "<code>𝙁𝙪𝙣𝙋𝙖𝙮 𝘾𝙖𝙧𝙙𝙞𝙣𝙖𝙡</code>\n<code>𝙵𝚞𝚗𝙿𝚊𝚢 𝙲𝚊𝚛𝚍𝚒𝚗𝚊𝚕</code>\n" \
-                     "<code>ᖴᑌᑎᑭᗩY ᑕᗩᖇᗪIᑎᗩᒪ</code>\n" \
-                     "<code>FunPay Cardinal</code>\n<code>[FunPay / Cardinal]</code>\n" \
-                     "<code>🤖</code>\n<code>🐦</code>\n\n" \
-                     "You can tap on the examples to copy and edit them to your liking.\nNote that on FunPay, the emoji " \
-                     "🐦 looks different than in Telegram." \
-                     "\n\nTo remove the watermark, send <code>-</code>."
-watermark_changed = "✅ The message watermark has been changed."
-watermark_deleted = "✅ The message watermark has been deleted."
-watermark_error = "❌ Invalid watermark."
-
 logfile_not_found = "❌ Log file not found."
 logfile_sending = "Sending log file (it may take some time)..."
 logfile_error = "❌ Failed to send log file."
 logfile_deleted = "🗑️ Deleted {} logfile(s)."
 
 update_no_tags = "❌ Failed to get the version list. Try again later."
-update_lasted = "✅ You have the latest version FunPayCardinal {}"
+update_lasted = "✅ You have the latest version FunPayCardinalRemake {}"
 update_get_error = "❌ Failed to get new version information. Try again later."
 update_available = "<b><u>New version available!</u></b>\n\n\n{}\n\n{}"
 update_update = "To update, enter the command /update"
-update_backup = "✅ Backup of configs, storage and plugins <code>backup.zip</code>.\n\n" \
-                "⚠️ DO NOT SEND this archive to ANYONE. It contains ABSOLUTELY ALL content and settings of the bot (including golden_key and product files)."
-update_backup_error = "❌ Failed to back up configs, storage and plugins."
-update_backup_send_error = "❌ Failed to send the backup."
-update_backup_not_found = "❌ Backup not found."
 update_downloaded = "✅ The update {} is downloaded (skipped {} items). Installing..."
 update_download_error = "❌ An error occurred while downloading the update."
 update_done = "✅ The update is installed! Restart the FPC with the /restart command."
@@ -302,7 +279,6 @@ update_done_exe = "✅ The update is installed! New <code>FPC.exe</code> is in <
                   "Turn off <i>FPC</i>, replace old <code>FPC.exe</code> with new one and run <code>Start.bat</code>. "
 update_install_error = "❌ An error occurred while installing the update."
 
-send_backup = "Send me the backup.\n\n<b>⚠️ WARNING! Uploading backups from untrusted sources may lead to serious consequences.</b>"
 
 restarting = "Restarting..."
 power_off_0 = """<b><u>Are you sure you want to turn me off?</u></b>\n
@@ -412,8 +388,6 @@ pl_not_found_err = "❌ Plugin with UUID <code>{}</code> not found."
 pl_file_not_found_err = "❌  File <code>{}</code> not found.\nRestart <i>FPC</i> with command /restart."
 pl_commands_list = "<b><i>{}</i></b> plugin commands list."
 pl_author = "Dev"
-pl_new = "Send me a plugin.\n\n<b>⚠️ ATTENTION! Downloading plugins from questionable sources may lead to unfortunate consequences.\n" \
-         " solves most potential issues.</b>"
 
 au_user_settings = "Settings for user {}"
 # - Menus desc
@@ -455,18 +429,13 @@ cmd_golden_key = "change golden_key"
 cmd_test_lot = "create one-time delivery key"
 cmd_upload_chat_img = "(chat) upload an image to FunPay"
 cmd_upload_offer_img = "(lot) upload an image to FunPay"
-cmd_upload_plugin = "upload a plugin"
 cmd_ban = "add user to the blacklist"
 cmd_unban = "delete user from blacklist"
 cmd_black_list = "blacklist"
-cmd_watermark = "change message watermark"
 cmd_logs = "download current log-file"
 cmd_del_logs = "delete old log-files"
 cmd_about = "about current version"
 cmd_sys = "system load information"
-cmd_create_backup = "create backup"
-cmd_get_backup = "get backup"
-cmd_upload_backup = "upload backup"
 cmd_restart = "restart FPC"
 cmd_power_off = "shutdown FPC"
 
@@ -530,8 +499,6 @@ log_access_granted = "$MAGENTA@{} (ID: {})$RESET gained access to the control pa
 log_new_ad_key = "$MAGENTA@{} (ID: {})$RESET created a key to deliver $YELLOW{}$RESET: $CYAN{}$RESET."
 log_user_blacklisted = "$MAGENTA@{} (ID: {})$RESET has blacklisted $YELLOW{}$RESET."
 log_user_unbanned = "$MAGENTA@{} (ID: {})$RESET has removed $YELLOW{}$RESET from the blacklist."
-log_watermark_changed = "$MAGENTA@{} (ID: {})$RESET changed the message watermark to $YELLOW{}$RESET."
-log_watermark_deleted = "$MAGENTA@{} (ID: {})$RESET deleted the message watermark."
 log_greeting_changed = "$MAGENTA@{} (ID: {})$RESET changed the greeting text to $YELLOW{}$RESET."
 log_greeting_cooldown_changed = "$MAGENTA@{} (ID: {})$RESET changed the cooldown of the welcome message to $YELLOW{}$RESET days."
 log_order_confirm_changed = "$MAGENTA@{} (ID: {})$RESET changed the text of order confirmation reply to $YELLOW{}$RESET."
@@ -566,10 +533,6 @@ log_sending_greetings = "User $YELLOW{} (CID: {})$RESET wrote for the first time
 log_new_cmd = "Received the command $YELLOW{}$RESET in the chat with the user $YELLOW{} (CID: {})$RESET."
 ntfc_new_order = "💰 <b>New order:</b> <code>{}</code>\n\n<b><i>🙍‍♂️ Buyer:</i></b>  <code>{}</code>\n" \
                  "<b><i>💵 Order amount:</i></b>  <code>{}</code>\n<b><i>📇 ID:</i></b> <code>#{}</code>\n\n<i>{}</i>"
-ntfc_new_order_not_in_cfg = "ℹ️ The goods will not be delivered because auto-delivery is not linked to the lot."
-ntfc_new_order_ad_disabled = "ℹ️ The goods will not be delivered because auto-delivery is disabled in global switches."
-ntfc_new_order_ad_disabled_for_lot = "ℹ️ The goods will not be delivered because auto-delivery is disabled for this item."
-ntfc_new_order_user_blocked = "ℹ️ The goods will not be delivered, because the user is on the black list and the auto-delivery lock is on."
 ntfc_new_order_will_be_delivered = "ℹ️ The product will be delivered as soon as possible."
 ntfc_new_review = "🔮 You received {} for the order <code>{}</code>!\n\n💬<b>Review:</b>\n<code>{}</code>{}"
 ntfc_review_reply_text = "\n\n🗨️<b>Reply:</b> \n<code>{}</code>"

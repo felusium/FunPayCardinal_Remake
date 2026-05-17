@@ -52,7 +52,7 @@ CURRENCY_MAP = {
     "RUB": Currency.RUB,
     "EUR": Currency.EUR,
     "USD": Currency.USD,
-    "₽": Currency.RUB,
+    "\u20bd": Currency.RUB,
     "€": Currency.EUR,
     "$": Currency.USD,
     "¤": Currency.RUB,
@@ -254,7 +254,7 @@ class RegularExpressions(object):
         """
 
         self.EXCHANGE_RATE = re.compile(
-            r"(You will receive payment in|Вы начнёте получать оплату в|Ви почнете одержувати оплату в)\s*(USD|RUB|EUR)\.\s*(Your offers prices will be calculated based on the exchange rate:|Цены ваших предложений будут пересчитаны по курсу|Ціни ваших пропозицій будуть перераховані за курсом)\s*([\d.,]+)\s*(₽|€|\$)\s*(за|for)\s*([\d.,]+)\s*(₽|€|\$)\.")
+            r"(You will receive payment in|Вы начнёте получать оплату в|Ви почнете одержувати оплату в)\s*(USD|RUB|EUR)\.\s*(Your offers prices will be calculated based on the exchange rate:|Цены ваших предложений будут пересчитаны по курсу|Ціни ваших пропозицій будуть перераховані за курсом)\s*([\d.,]+)\s*(\u20bd|€|\$)\s*(за|for)\s*([\d.,]+)\s*(\u20bd|€|\$)\.")
         """
         Скомпилированное регулярное выражение, описывающее фразу о смене валюты.
         """

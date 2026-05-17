@@ -54,7 +54,7 @@ trap cleanup EXIT
 
 echo -e "${GREEN}Устанавливаю системные пакеты...${RESET}"
 run sudo apt update
-run sudo apt install -y python3 python3-venv python3-pip unzip curl ca-certificates
+run sudo apt install -y python3 python3-venv python3-pip unzip curl ca-certificates rsync
 
 echo -e "${GREEN}Скачиваю исходники из твоего репозитория...${RESET}"
 run curl -L "$ARCHIVE_URL" -o "$TMP_DIR/source.zip"
@@ -66,9 +66,13 @@ if [[ -z "${SRC_DIR:-}" || ! -d "$SRC_DIR" ]]; then
 fi
 
 echo -e "${GREEN}Копирую файлы в ${APP_DIR}...${RESET}"
-run sudo rm -rf "$APP_DIR"
 run sudo mkdir -p "$APP_DIR"
-run sudo cp -a "$SRC_DIR/." "$APP_DIR/"
+run sudo rsync -a --delete \
+  --exclude "configs/" \
+  --exclude "storage/" \
+  --exclude "plugins/" \
+  --exclude "logs/" \
+  "$SRC_DIR/" "$APP_DIR/"
 run sudo chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 
 echo -e "${GREEN}Создаю виртуальное окружение...${RESET}"

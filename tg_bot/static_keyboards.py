@@ -66,6 +66,6 @@ def CONFIGS_UPLOADER() -> K:
         .add(B(_("cfg_upload_ad"), callback_data="upload_auto_delivery_config")) \
         .add(B(_("gl_back"), callback_data=CBT.MAIN2))
 
+
 def UPLOAD_PLUGIN() -> K:
-    return (K()
-            .add(B(_("gl_cancel"), callback_data=CBT.CLEAR_STATE)))
+    return K().add(B(_("gl_cancel"), callback_data=CBT.CLEAR_STATE))

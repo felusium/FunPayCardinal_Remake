@@ -216,7 +216,7 @@ class Cardinal(object):
                 self.account.get()
                 self.balance = self.get_balance()
                 greeting_text = cardinal_tools.create_greeting_text(self)
-                cardinal_tools.set_console_title(f"FunPay Cardinal - {self.account.username} ({self.account.id})")
+                cardinal_tools.set_console_title(f"FunPayCardinalRemake - {self.account.username} ({self.account.id})")
                 for line in greeting_text.split("\n"):
                     logger.info(line)
                 break
@@ -446,8 +446,7 @@ class Cardinal(object):
         return entities
 
     def send_message(self, chat_id: int | str, message_text: str, chat_name: str | None = None,
-                     interlocutor_id: int | None = None, attempts: int = 3,
-                     watermark: bool = True) -> list[FunPayAPI.types.Message] | None:
+                     interlocutor_id: int | None = None, attempts: int = 3) -> list[FunPayAPI.types.Message] | None:
         """
         Отправляет сообщение в чат FunPay.
 
@@ -456,13 +455,9 @@ class Cardinal(object):
         :param chat_name: название чата (необязательно).
         :param interlocutor_id: ID собеседника (необязательно).
         :param attempts: кол-во попыток на отправку сообщения.
-        :param watermark: добавлять ли водяной знак в начало сообщения?
 
         :return: объект сообщения / последнего сообщения, если оно доставлено, иначе - None
         """
-        if self.MAIN_CFG["Other"].get("watermark") and watermark and not message_text.strip().startswith("$photo="):
-            message_text = f"{self.MAIN_CFG['Other']['watermark']}\n" + message_text
-
         entities = self.parse_message_entities(message_text)
         if all(isinstance(i, float) for i in entities) or not entities:
             return

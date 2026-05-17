@@ -1,6 +1,6 @@
 # FunPay Cardinal Remake
 
-Модифицированная версия FunPay Cardinal для автоматизации работы с FunPay.
+Модифицированная версия FunPayCardinalRemake для автоматизации работы с FunPay.
 
 В этой сборке удалены рекламные интеграции, удаленные объявления, автозагрузка обновлений и автоматическое изменение профиля Telegram-бота. Обновления устанавливаются только вручную владельцем репозитория или сервера.
 
@@ -24,32 +24,44 @@
 - Отключена автоматическая установка названия и описания Telegram-бота.
 - Убрано требование, чтобы username Telegram-бота начинался с `funpay`.
 - Удалены ссылки на сторонние Telegram-каналы, донаты и чаты.
+- Удалены скрытые preview-ссылки на сторонние изображения.
+- Удалены команды и обработчики backup-архивов.
+- Удален водяной знак и автоматическое добавление подписи в сообщения.
+- Загрузка плагинов и конфигов через Telegram доступна только авторизованным пользователям.
 - Очищены временные файлы, кэши, старые update-файлы и funding-настройки.
 
 ## Важно
 
-После настройки/установки не публикуйте и не передавайте другим людям:
+После настройки и установки не публикуйте и не передавайте другим людям:
 
 - `golden_key`;
 - токен Telegram-бота;
 - файлы из `configs/`;
 - файлы из `storage/`;
 - логи из `logs/`;
-- бэкапы.
+- приватные архивы с данными бота.
 
 Эти данные могут дать доступ к вашему аккаунту или панели управления.
 
 ## Установка на Windows
 
-1. Установите Python 3.13 или новее.
+1. Установите Python 3.11 или новее.
 2. При установке Python включите галочку `Add python.exe to PATH`.
-3. Скачайте архив проекта со страницы репозитория.
+3. Скачайте архив проекта со страницы репозитория или из раздела Releases.
 4. Распакуйте архив в удобную папку.
 5. Запустите `Setup.bat` и дождитесь установки зависимостей.
 6. Запустите `Start.bat`.
 7. При первом запуске пройдите настройку в консоли.
 
-## Установка на Ubuntu
+Если окно сразу закрывается, откройте папку проекта в `cmd` или PowerShell и выполните:
+
+```bat
+python main.py
+```
+
+## Установка на Ubuntu/Debian
+
+Автоматический установщик подходит для Ubuntu/Debian-серверов с `systemd`.
 
 Выполните команду:
 
@@ -61,25 +73,98 @@ wget https://raw.githubusercontent.com/felusium/FunPayCardinal_Remake/main/insta
 
 - скачивает файлы только из этого репозитория;
 - устанавливает системные зависимости;
+- создает отдельного Linux-пользователя для запуска;
 - создает виртуальное окружение Python;
 - устанавливает Python-зависимости из `requirements.txt`;
 - создает systemd-сервис `FunPayCardinalRemake`;
 - предлагает добавить сервис в автозагрузку;
 - запускает первичную настройку.
 
-После установки полезные команды будут показаны в консоли.
+При повторном запуске установщик обновляет файлы проекта, но не удаляет приватные папки:
+
+- `configs/`;
+- `storage/`;
+- `plugins/`;
+- `logs/`.
+
+Полезные команды после установки:
+
+```bash
+sudo systemctl status FunPayCardinalRemake@fpc.service -n 100
+sudo systemctl stop FunPayCardinalRemake@fpc.service
+sudo systemctl start FunPayCardinalRemake@fpc.service
+sudo systemctl restart FunPayCardinalRemake@fpc.service
+sudo systemctl enable FunPayCardinalRemake@fpc.service
+sudo journalctl -u FunPayCardinalRemake@fpc.service -n 100 --no-pager
+```
+
+Если при установке вы указали другого Linux-пользователя вместо `fpc`, замените `fpc` в командах на свое имя пользователя.
 
 ## Ручная установка на Linux
 
+Этот вариант подходит для Linux без автоматического установщика или если вы хотите запустить бота вручную без `systemd`.
+
 ```bash
 sudo apt update
-sudo apt install -y python3 python3-venv python3-pip unzip
+sudo apt install -y python3 python3-venv python3-pip git
+git clone https://github.com/felusium/FunPayCardinal_Remake.git
+cd FunPayCardinal_Remake
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -U pip
+python -m pip install -U pip
 pip install -r requirements.txt
-python3 main.py
+python main.py
 ```
+
+Для повторного запуска:
+
+```bash
+cd FunPayCardinal_Remake
+source .venv/bin/activate
+python main.py
+```
+
+## Установка на Android через Termux
+
+Termux не использует `systemd`, поэтому автоматический Ubuntu-установщик для него не подходит. Запускайте бота вручную или через `tmux`.
+
+1. Установите Termux из F-Droid.
+2. Откройте Termux и выполните:
+
+```bash
+pkg update && pkg upgrade
+pkg install python git clang rust make pkg-config libjpeg-turbo zlib libxml2 libxslt openssl libffi
+git clone https://github.com/felusium/FunPayCardinal_Remake.git
+cd FunPayCardinal_Remake
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip setuptools wheel
+pip install --no-cache-dir -r requirements.txt
+python main.py
+```
+
+Чтобы бот продолжал работать после закрытия сессии, используйте `tmux`:
+
+```bash
+pkg install tmux
+termux-wake-lock
+cd FunPayCardinal_Remake
+tmux new -s fpc
+source .venv/bin/activate
+python main.py
+```
+
+Отключиться от `tmux`, не останавливая бота: нажмите `Ctrl+B`, потом `D`.
+
+Вернуться к боту:
+
+```bash
+tmux attach -t fpc
+```
+
+Остановить бота в `tmux`: нажмите `Ctrl+C`.
+
+На Android работа в фоне зависит от прошивки и энергосбережения. Для стабильной работы отключите оптимизацию батареи для Termux.
 
 ## Плагины
 
@@ -97,13 +182,16 @@ python3 main.py
 
 Автоматические обновления отключены.
 
-Чтобы обновить проект:
+Чтобы обновить проект вручную:
 
-1. Сделайте резервную копию `configs/`, `storage/` и `plugins/`.
-2. Скачайте новую версию вручную.
-3. Перенесите свои конфиги и данные.
-4. Проверьте работу бота перед запуском в постоянном режиме.
+1. Остановите бота.
+2. Скопируйте свои приватные папки `configs/`, `storage/` и `plugins/` в отдельное безопасное место.
+3. Скачайте новую версию вручную.
+4. Перенесите свои конфиги, товары и плагины обратно.
+5. Проверьте работу бота перед запуском в постоянном режиме.
+
+На Ubuntu/Debian можно повторно запустить `install-fpc.sh`: он обновит файлы проекта и сохранит приватные папки `configs/`, `storage/`, `plugins/`, `logs/`.
 
 ## Ответственность
 
-Используйте проект на свой риск. Соблюдайте правила FunPay, Telegram и GitHub. Не публикуйте приватные ключи, токены, cookie, конфиги и логи.
+Используйте проект на свой риск. Соблюдайте правила FunPay, Telegram и GitHub. Не публикуйте приватные ключи, токены, cookie, конфиги, товары и логи.

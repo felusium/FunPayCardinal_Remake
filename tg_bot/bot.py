@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING
 
 from FunPayAPI import Account
@@ -23,10 +22,9 @@ import telebot
 from telebot.apihelper import ApiTelegramException
 import logging
 
-from telebot.types import InlineKeyboardMarkup as K, InlineKeyboardButton as B, Message, CallbackQuery, BotCommand, \
-    InputFile
+from telebot.types import InlineKeyboardMarkup as K, InlineKeyboardButton as B, Message, CallbackQuery, BotCommand
 from tg_bot import utils, static_keyboards as skb, keyboards as kb, CBT
-from Utils import cardinal_tools, updater
+from Utils import cardinal_tools
 from locales.localizer import Localizer
 
 logger = logging.getLogger("TGBot")
@@ -86,12 +84,8 @@ class TGBot:
             "logs": "cmd_logs",
             "about": "cmd_about",
             "sys": "cmd_sys",
-            "get_backup": "cmd_get_backup",
-            "create_backup": "cmd_create_backup",
-            "upload_backup": "cmd_upload_backup",
             "del_logs": "cmd_del_logs",
             "power_off": "cmd_power_off",
-            "watermark": "cmd_watermark",
         }
         self.__default_notification_settings = {
             utils.NotificationTypes.ad: 1,
@@ -214,7 +208,7 @@ class TGBot:
             logger.error(_("log_tg_handler_error"))
             logger.debug("TRACEBACK", exc_info=True)
 
-    def msg_handler(self, handler, **kwargs):
+    def msg_handler(self, handler, allow_unauthorized: bool = False, **kwargs):
         """
         Регистрирует хэндлер, срабатывающий при новом сообщении.
 
@@ -225,13 +219,15 @@ class TGBot:
 
         @bot_instance.message_handler(**kwargs)
         def run_handler(message: Message):
+            if not allow_unauthorized and message.from_user.id not in self.authorized_users:
+                return
             try:
                 handler(message)
             except:
                 logger.error(_("log_tg_handler_error"))
                 logger.debug("TRACEBACK", exc_info=True)
 
-    def cbq_handler(self, handler, func, **kwargs):
+    def cbq_handler(self, handler, func, allow_unauthorized: bool = False, **kwargs):
         """
         Регистрирует хэндлер, срабатывающий при новом callback'е.
 
@@ -243,6 +239,8 @@ class TGBot:
 
         @bot_instance.callback_query_handler(func, **kwargs)
         def run_handler(call: CallbackQuery):
+            if not allow_unauthorized and call.from_user.id not in self.authorized_users:
+                return
             try:
                 handler(call)
             except:
@@ -473,35 +471,6 @@ class TGBot:
         blacklist = ", ".join(f"<code>{i}</code>" for i in sorted(self.cardinal.blacklist, key=lambda x: x.lower()))
         self.bot.send_message(m.chat.id, blacklist)
 
-    def act_edit_watermark(self, m: Message):
-        """
-        Активирует режим ввода вотемарки сообщений.
-        """
-        watermark = self.cardinal.MAIN_CFG["Other"]["watermark"]
-        watermark = f"\n<code>{utils.escape(watermark)}</code>" if watermark else ""
-        result = self.bot.send_message(m.chat.id, _("act_edit_watermark").format(watermark),
-                                       reply_markup=skb.CLEAR_STATE_BTN())
-        self.set_state(m.chat.id, result.id, m.from_user.id, CBT.EDIT_WATERMARK)
-
-    def edit_watermark(self, m: Message):
-        self.clear_state(m.chat.id, m.from_user.id, True)
-        watermark = m.text if m.text != "-" else ""
-        if re.fullmatch(r"\[[a-zA-Z]+]", watermark):
-            self.bot.reply_to(m, _("watermark_error"))
-            return
-
-        preview = f"<a href=\"https://sfunpay.com/s/chat/zb/wl/zbwl4vwc8cc1wsftqnx5.jpg\">⁢</a>" if not \
-            utils.has_brand_mark(watermark) else \
-            f"<a href=\"https://sfunpay.com/s/chat/kd/8i/kd8isyquw660kcueck3g.jpg\">⁢</a>"
-        self.cardinal.MAIN_CFG["Other"]["watermark"] = watermark
-        self.cardinal.save_config(self.cardinal.MAIN_CFG, "configs/_main.cfg")
-        if watermark:
-            logger.info(_("log_watermark_changed", m.from_user.username, m.from_user.id, watermark))
-            self.bot.reply_to(m, preview + _("watermark_changed", watermark))
-        else:
-            logger.info(_("log_watermark_deleted", m.from_user.username, m.from_user.id))
-            self.bot.reply_to(m, preview + _("watermark_deleted"))
-
     def send_logs(self, m: Message):
         """
         Отправляет файл логов.
@@ -556,31 +525,6 @@ class TGBot:
 
     def check_updates(self, m: Message):
         self.bot.send_message(m.chat.id, "Обновления отключены. Обновляй скрипт вручную, когда сам решишь.")
-
-    def get_backup(self, m: Message):
-        logger.info(
-            f"[IMPORTANT] Получаю бэкап по запросу пользователя $MAGENTA@{m.from_user.username} (id: {m.from_user.id})$RESET.")
-        if os.path.exists("backup.zip"):  # locale
-            with open(file_path := "backup.zip", 'rb') as file:
-                modification_time = os.path.getmtime(file_path)
-                formatted_time = time.strftime('%d.%m.%Y %H:%M:%S', time.localtime(modification_time))
-                try:
-                    self.bot.send_document(chat_id=m.chat.id, document=InputFile(file),
-                                           caption=f'{_("update_backup")}\n\n{formatted_time}')
-                except:
-                    logger.warning("Не удалось отправить бэкап")
-                    logger.debug("TRACEBACK", exc_info=True)
-                    self.bot.send_message(m.chat.id, _("update_backup_send_error"))
-
-        else:
-            self.bot.send_message(m.chat.id, _("update_backup_not_found"))
-
-    def create_backup(self, m: Message):
-        if updater.create_backup():
-            self.bot.send_message(m.chat.id, _("update_backup_error"))
-            return False
-        self.get_backup(m)
-        return True
 
     def update(self, m: Message):
         self.bot.send_message(m.chat.id, "Обновления отключены. Автоматическая замена файлов запрещена.")
@@ -667,7 +611,7 @@ class TGBot:
         node_id, username = data["node_id"], data["username"]
         self.clear_state(message.chat.id, message.from_user.id, True)
         response_text = message.text.strip()
-        result = self.cardinal.send_message(node_id, response_text, username, watermark=False)
+        result = self.cardinal.send_message(node_id, response_text, username)
         if result:
             self.bot.reply_to(message, _("msg_sent", node_id, username),
                               reply_markup=kb.reply(node_id, username, again=True, extend=True))
@@ -682,13 +626,6 @@ class TGBot:
         cbt = CBT.UPLOAD_CHAT_IMAGE if m.text.startswith("/upload_chat_img") else CBT.UPLOAD_OFFER_IMAGE
         result = self.bot.send_message(m.chat.id, _("send_img"), reply_markup=skb.CLEAR_STATE_BTN())
         self.set_state(m.chat.id, result.id, m.from_user.id, cbt)
-
-    def act_upload_backup(self, m: Message):
-        """
-        Активирует режим ожидания бэкапа.
-        """
-        result = self.bot.send_message(m.chat.id, _("send_backup"), reply_markup=skb.CLEAR_STATE_BTN())
-        self.set_state(m.chat.id, result.id, m.from_user.id, CBT.UPLOAD_BACKUP)
 
     def act_edit_greetings_text(self, c: CallbackQuery):
         variables = ["v_date", "v_date_text", "v_full_date_text", "v_time", "v_full_time", "v_username",
@@ -1045,8 +982,9 @@ class TGBot:
         """
         self.mdw_handler(self.setup_chat_notifications, update_types=['message'])
         self.msg_handler(self.reg_admin, func=lambda msg: msg.from_user.id not in self.authorized_users,
-                         content_types=['text', 'document', 'photo', 'sticker'])
-        self.cbq_handler(self.ignore_unauthorized_users, lambda c: c.from_user.id not in self.authorized_users)
+                         content_types=['text', 'document', 'photo', 'sticker'], allow_unauthorized=True)
+        self.cbq_handler(self.ignore_unauthorized_users, lambda c: c.from_user.id not in self.authorized_users,
+                         allow_unauthorized=True)
         self.cbq_handler(self.param_disabled, lambda c: c.data.startswith(CBT.PARAM_DISABLED))
         self.msg_handler(self.run_file_handlers, content_types=["photo", "document"],
                          func=lambda m: self.is_file_handler(m))
@@ -1059,7 +997,6 @@ class TGBot:
         self.cbq_handler(self.update_profile, lambda c: c.data == CBT.UPDATE_PROFILE)
         self.msg_handler(self.act_manual_delivery_test, commands=["test_lot"])
         self.msg_handler(self.act_upload_image, commands=["upload_chat_img", "upload_offer_img"])
-        self.msg_handler(self.act_upload_backup, commands=["upload_backup"])
         self.cbq_handler(self.act_edit_greetings_text, lambda c: c.data == CBT.EDIT_GREETINGS_TEXT)
         self.msg_handler(self.edit_greetings_text,
                          func=lambda m: self.check_state(m.chat.id, m.from_user.id, CBT.EDIT_GREETINGS_TEXT))
@@ -1079,14 +1016,9 @@ class TGBot:
         self.msg_handler(self.act_unban, commands=["unban"])
         self.msg_handler(self.unban, func=lambda m: self.check_state(m.chat.id, m.from_user.id, CBT.UNBAN))
         self.msg_handler(self.send_ban_list, commands=["black_list"])
-        self.msg_handler(self.act_edit_watermark, commands=["watermark"])
-        self.msg_handler(self.edit_watermark,
-                         func=lambda m: self.check_state(m.chat.id, m.from_user.id, CBT.EDIT_WATERMARK))
         self.msg_handler(self.send_logs, commands=["logs"])
         self.msg_handler(self.del_logs, commands=["del_logs"])
         self.msg_handler(self.about, commands=["about"])
-        self.msg_handler(self.get_backup, commands=["get_backup"])
-        self.msg_handler(self.create_backup, commands=["create_backup"])
         self.msg_handler(self.send_system_info, commands=["sys"])
         self.msg_handler(self.restart_cardinal, commands=["restart"])
         self.msg_handler(self.ask_power_off, commands=["power_off"])
