@@ -74,14 +74,12 @@ class TGBot:
             "menu": "cmd_menu",
             "profile": "cmd_profile",
             "restart": "cmd_restart",
-            "golden_key": "cmd_golden_key",
+            "gkey": "cmd_golden_key",
             "ban": "cmd_ban",
             "unban": "cmd_unban",
             "black_list": "cmd_black_list",
-            "upload_plugin": "cmd_upload_plugin",
             "test_lot": "cmd_test_lot",
             "logs": "cmd_logs",
-            "del_logs": "cmd_del_logs",
         }
         self.__default_notification_settings = {
             utils.NotificationTypes.ad: 1,
@@ -557,22 +555,6 @@ class TGBot:
                 logger.debug("TRACEBACK", exc_info=True)
                 self.bot.send_message(m.chat.id, _("logfile_error"))
 
-    def del_logs(self, m: Message):
-        """
-        Удаляет старые лог-файлы.
-        """
-        logger.info(
-            f"[IMPORTANT] Удаляю логи по запросу пользователя $MAGENTA@{m.from_user.username} (id: {m.from_user.id})$RESET.")
-        deleted = 0  # locale
-        for file in os.listdir("logs"):
-            if not file.endswith(".log"):
-                try:
-                    os.remove(f"logs/{file}")
-                    deleted += 1
-                except:
-                    continue
-        self.bot.send_message(m.chat.id, _("logfile_deleted").format(deleted))
-
     def about(self, m: Message):
         """
         Отправляет информацию о текущей версии бота.
@@ -780,7 +762,10 @@ class TGBot:
         try:
             chat = self.cardinal.account.get_chat(int(chat_id))
         except:
-            self.bot.answer_callback_query(c.id)
+            try:
+                self.bot.answer_callback_query(c.id)
+            except ApiTelegramException:
+                pass
             self.bot.send_message(c.message.chat.id, _("get_chat_error"))
             return
 
@@ -826,8 +811,14 @@ class TGBot:
             last_badge = i.badge
             last_by_vertex = i.by_vertex
 
-        self.bot.edit_message_text(text, c.message.chat.id, c.message.id,
-                                   reply_markup=kb.reply(int(chat_id), username, False, False))
+        try:
+            self.bot.edit_message_text(text, c.message.chat.id, c.message.id,
+                                       reply_markup=kb.reply(int(chat_id), username, False, False))
+        except ApiTelegramException as e:
+            description = e.result_json.get("description", "")
+            if "message is not modified" in description:
+                return
+            raise
 
     # Ордер
     def ask_confirm_refund(self, call: CallbackQuery):
@@ -1048,7 +1039,7 @@ class TGBot:
 
         self.msg_handler(self.send_settings_menu, commands=["menu", "start"])
         self.msg_handler(self.send_profile, commands=["profile"])
-        self.msg_handler(self.act_change_cookie, commands=["change_cookie", "golden_key"])
+        self.msg_handler(self.act_change_cookie, commands=["gkey"])
         self.msg_handler(self.change_cookie, func=lambda m: self.check_state(m.chat.id, m.from_user.id,
                                                                              CBT.CHANGE_GOLDEN_KEY))
         self.cbq_handler(self.update_profile, lambda c: c.data == CBT.UPDATE_PROFILE)
@@ -1073,7 +1064,6 @@ class TGBot:
         self.msg_handler(self.unban, func=lambda m: self.check_state(m.chat.id, m.from_user.id, CBT.UNBAN))
         self.msg_handler(self.send_ban_list, commands=["black_list"])
         self.msg_handler(self.send_logs, commands=["logs"])
-        self.msg_handler(self.del_logs, commands=["del_logs"])
         self.msg_handler(self.restart_cardinal, commands=["restart"])
         self.cbq_handler(self.send_review_reply_text, lambda c: c.data.startswith(f"{CBT.SEND_REVIEW_REPLY_TEXT}:"))
 

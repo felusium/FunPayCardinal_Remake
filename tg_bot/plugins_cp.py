@@ -200,7 +200,6 @@ def init_plugins_cp(cardinal: Cardinal, *args):
     tg.cbq_handler(delete_plugin, lambda c: c.data.startswith(f"{CBT.CONFIRM_DELETE_PLUGIN}:"))
     tg.cbq_handler(pin_plugin, lambda c: c.data.startswith(f"{CBT.PIN_PLUGIN}:"))
     tg.cbq_handler(act_upload_plugin, lambda c: c.data.startswith(f"{CBT.UPLOAD_PLUGIN}:"))
-    tg.msg_handler(act_upload_plugin, commands=["upload_plugin"])
 
 
 BIND_TO_PRE_INIT = [init_plugins_cp]
