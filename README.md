@@ -72,7 +72,7 @@ python main.py
 Выполните команду:
 
 ```bash
-wget https://raw.githubusercontent.com/felusium/FunPayCardinal_Remake/main/install-fpc.sh -O install-fpc.sh && bash install-fpc.sh
+wget https://raw.githubusercontent.com/felusium/FunPayCardinalRemake/main/install-fpc.sh -O install-fpc.sh && bash install-fpc.sh
 ```
 
 Установщик:
@@ -113,7 +113,7 @@ sudo journalctl -u FunPayCardinalRemake@fpc.service -n 100 --no-pager
 ```bash
 sudo apt update
 sudo apt install -y python3 python3-venv python3-pip git
-git clone https://github.com/felusium/FunPayCardinal_Remake.git
+git clone https://github.com/felusium/FunPayCardinalRemake.git
 cd FunPayCardinal_Remake
 python3 -m venv .venv
 source .venv/bin/activate
@@ -140,7 +140,7 @@ Termux не использует `systemd`, поэтому автоматиче�
 ```bash
 pkg update && pkg upgrade
 pkg install python git clang rust make pkg-config libjpeg-turbo zlib libxml2 libxslt openssl libffi
-git clone https://github.com/felusium/FunPayCardinal_Remake.git
+git clone https://github.com/felusium/FunPayCardinalRemake.git
 cd FunPayCardinal_Remake
 python -m venv .venv
 source .venv/bin/activate
