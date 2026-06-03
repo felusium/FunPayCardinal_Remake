@@ -244,9 +244,8 @@ def generate_profile_text(cardinal: Cardinal) -> str:
     """
     account = cardinal.account  # locale
     balance = cardinal.balance
-    return f"""Статистика аккаунта <b><i>{account.username}</i></b>
+    return f"""Статистика аккаунта
 
-<b>ID:</b> <code>{account.id}</code>
 <b>Незавершенных заказов:</b> <code>{account.active_sales}</code>
 <b>Баланс:</b> 
     <b>₽:</b> <code>{balance.total_rub}₽</code>, доступно для вывода <code>{balance.available_rub}₽</code>.

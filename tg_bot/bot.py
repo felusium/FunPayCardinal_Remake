@@ -73,13 +73,8 @@ class TGBot:
         self.commands = {
             "menu": "cmd_menu",
             "profile": "cmd_profile",
-            "restart": "cmd_restart",
             "gkey": "cmd_golden_key",
-            "ban": "cmd_ban",
-            "unban": "cmd_unban",
-            "black_list": "cmd_black_list",
-            "test_lot": "cmd_test_lot",
-            "logs": "cmd_logs",
+            "help": "cmd_help",
         }
         self.__default_notification_settings = {
             utils.NotificationTypes.ad: 1,
@@ -554,6 +549,12 @@ class TGBot:
                 logger.warning("Не удалось отправить лог-файл")
                 logger.debug("TRACEBACK", exc_info=True)
                 self.bot.send_message(m.chat.id, _("logfile_error"))
+
+    def send_help(self, m: Message):
+        """
+        Отправляет список скрытых команд.
+        """
+        self.bot.send_message(m.chat.id, _("hidden_commands_help"))
 
     def about(self, m: Message):
         """
@@ -1064,6 +1065,7 @@ class TGBot:
         self.msg_handler(self.unban, func=lambda m: self.check_state(m.chat.id, m.from_user.id, CBT.UNBAN))
         self.msg_handler(self.send_ban_list, commands=["black_list"])
         self.msg_handler(self.send_logs, commands=["logs"])
+        self.msg_handler(self.send_help, commands=["help"])
         self.msg_handler(self.restart_cardinal, commands=["restart"])
         self.cbq_handler(self.send_review_reply_text, lambda c: c.data.startswith(f"{CBT.SEND_REVIEW_REPLY_TEXT}:"))
 

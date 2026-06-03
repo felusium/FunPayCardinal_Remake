@@ -425,16 +425,25 @@ desc_au = "Here you can configure authorization in the Telegram control panel."
 desc_proxy = "Here you can set up the proxy."
 
 # - Commands desc
-cmd_menu = "open settings"
+cmd_menu = "Настройки"
 cmd_language = "change language"
-cmd_profile = "account statistics"
-cmd_golden_key = "change gkey"
+cmd_profile = "Профиль"
+cmd_golden_key = "Изменить Ключ"
+cmd_help = "Помощь"
 cmd_test_lot = "create one-time delivery key"
 cmd_ban = "add user to the blacklist"
 cmd_unban = "delete user from blacklist"
 cmd_black_list = "blacklist"
 cmd_logs = "download current log-file"
 cmd_restart = "Restart"
+hidden_commands_help = """<b>Скрытые команды:</b>
+
+/restart - перезапустить бота
+/logs - загрузить текущий лог-файл
+/ban - добавить пользователя в ЧС
+/unban - удалить пользователя из ЧС
+/black_list - показать черный список
+/test_lot - создать ключ выдачи"""
 
 # - Variables desc
 v_edit_greeting_text = "Enter the text of the welcome message."
