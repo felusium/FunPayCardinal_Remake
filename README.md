@@ -72,7 +72,7 @@ python main.py
 Выполните команду:
 
 ```bash
-wget https://raw.githubusercontent.com/felusium/FunPayCardinal_Remake/main/install-fpc.sh -O install-fpc.sh && bash install-fpc.sh
+wget https://raw.githubusercontent.com/felusium/FunPayCardinalRemake/main/install-fpc.sh -O install-fpc.sh && bash install-fpc.sh
 ```
 
 Установщик:
