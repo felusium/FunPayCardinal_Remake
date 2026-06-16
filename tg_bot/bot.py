@@ -75,6 +75,7 @@ class TGBot:
             "profile": "cmd_profile",
             "help": "cmd_help",
         }
+        self.visible_commands = ("menu", "profile", "help")
         self.__default_notification_settings = {
             utils.NotificationTypes.ad: 1,
             utils.NotificationTypes.announcement: 1
@@ -1187,19 +1188,22 @@ class TGBot:
 
         :param help_text: текст справки.
         """
+        if command not in self.visible_commands:
+            return
         self.commands[command] = help_text
 
     def setup_commands(self):
         """
         Устанавливает меню команд.
         """
+        commands = [(command, self.commands[command]) for command in self.visible_commands if command in self.commands]
         for lang in (None, *localizer.languages.keys()):
             if lang is None:
                 self.bot.delete_my_commands()
             else:
                 self.bot.delete_my_commands(language_code=lang)
-            commands = [BotCommand(f"/{i}", _(self.commands[i], language=lang)) for i in self.commands]
-            self.bot.set_my_commands(commands, language_code=lang)
+            bot_commands = [BotCommand(f"/{command}", _(help_text, language=lang)) for command, help_text in commands]
+            self.bot.set_my_commands(bot_commands, language_code=lang)
 
     def edit_bot(self):
         """

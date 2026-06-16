@@ -443,7 +443,7 @@ hidden_commands_help = """<b>Скрытые команды:</b>
 /logs - загрузить текущий лог-файл
 /del_logs - удалить старые лог-файлы
 /gkey - изменить golden_key
-/update - обновиться из felusium/FunPayCardinal_Remake
+/update - обновить версию
 /ban - добавить пользователя в ЧС
 /unban - удалить пользователя из ЧС
 /black_list - показать черный список
