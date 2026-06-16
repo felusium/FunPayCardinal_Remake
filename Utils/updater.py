@@ -1,114 +1,118 @@
-"""
-Проверка на обновления.
-"""
-from logging import getLogger
-from locales.localizer import Localizer
+from __future__ import annotations
 
-logger = getLogger("FPC.update_checker")
-localizer = Localizer()
-_ = localizer.translate
-
-class Release:
-    """
-    Класс, описывающий релиз.
-    """
-
-    def __init__(self, name: str, description: str, sources_link: str):
-        """
-        :param name: название релиза.
-        :param description: описание релиза (список изменений).
-        :param sources_link: ссылка на архив с исходниками.
-        """
-        self.name = name
-        self.description = description
-        self.sources_link = sources_link
+import os
+import shutil
+import tempfile
+import urllib.request
+import zipfile
+from pathlib import Path
 
 
-# Получение данных о новом релизе
-def get_tags(current_tag: str) -> list[str] | None:
-    """
-    Получает все теги с GitHub репозитория.
-    :param current_tag: текущий тег.
+REPO = "felusium/FunPayCardinal_Remake"
+BRANCH = "main"
+ARCHIVE_URL = f"https://github.com/{REPO}/archive/refs/heads/{BRANCH}.zip"
 
-    :return: список тегов.
-    """
-    return None
+EXCLUDED_TOP_LEVEL = {
+    ".git",
+    ".github",
+    ".venv",
+    "venv",
+    "env",
+    "__pycache__",
+    "configs",
+    "storage",
+    "plugins",
+    "logs",
+    "release",
+    "build",
+    "dist",
+    "update",
+}
+
+EXCLUDED_FILES = {
+    "Cardinal.ico",
+    "backup.zip",
+    "test.py",
+}
+
+EXCLUDED_SUFFIXES = {
+    ".pyc",
+    ".pyo",
+    ".log",
+    ".zip",
+}
 
 
-def get_next_tag(tags: list[str], current_tag: str):
-    """
-    Ищет след. тег после переданного.
-    Если не находит текущий тег, возвращает первый.
-    Если текущий тег - последний, возвращает None.
+def _is_excluded(path: Path) -> bool:
+    name = path.name
+    return name in EXCLUDED_TOP_LEVEL or name in EXCLUDED_FILES or path.suffix.lower() in EXCLUDED_SUFFIXES
 
-    :param tags: список тегов.
-    :param current_tag: текущий тег.
 
-    :return: след. тег / первый тег / None
-    """
+def _safe_child(parent: Path, child: Path) -> bool:
     try:
-        curr_index = tags.index(current_tag)
+        child.resolve().relative_to(parent.resolve())
     except ValueError:
-        return tags[len(tags) - 1]
-
-    if not curr_index:
-        return None
-    return tags[curr_index - 1]
+        return False
+    return True
 
 
-def get_releases(from_tag: str) -> list[Release] | None:
-    """
-    Получает данные о доступных релизах, начиная с тега.
-
-    :param from_tag: тег релиза, с которого начинать поиск.
-
-    :return: данные релизов.
-    """
-    return None
+def _remove_path(path: Path, root: Path) -> None:
+    if not _safe_child(root, path):
+        raise RuntimeError(f"Unsafe update path: {path}")
+    if path.is_dir():
+        shutil.rmtree(path)
+    elif path.exists():
+        path.unlink()
 
 
-def get_new_releases(current_tag) -> int | list[Release]:
-    """
-    Проверяет на наличие обновлений.
-
-    :param current_tag: тег текущей версии.
-
-    :return: список объектов релизов или код ошибки:
-        1 - произошла ошибка при получении списка тегов.
-        2 - текущий тег является последним.
-        3 - не удалось получить данные о релизе.
-    """
-    return 2
+def _copy_path(src: Path, dst: Path, root: Path) -> None:
+    if not _safe_child(root, dst):
+        raise RuntimeError(f"Unsafe update path: {dst}")
+    if dst.exists():
+        _remove_path(dst, root)
+    if src.is_dir():
+        shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", "*.log", "*.zip"))
+    else:
+        shutil.copy2(src, dst)
 
 
-#  Загрузка нового релиза
-def download_zip(url: str) -> int:
-    """
-    Загружает zip архив с обновлением в файл storage/cache/update.zip.
-
-    :param url: ссылка на zip архив.
-
-    :return: 0, если архив с обновлением загружен, иначе - 1.
-    """
-    return 1
+def _find_source_root(extract_dir: Path) -> Path:
+    dirs = [p for p in extract_dir.iterdir() if p.is_dir()]
+    if len(dirs) != 1:
+        raise RuntimeError("Не удалось найти папку проекта в архиве.")
+    source_root = dirs[0]
+    if not (source_root / "main.py").exists():
+        raise RuntimeError("В архиве не найден main.py.")
+    return source_root
 
 
-def extract_update_archive() -> str | int:
-    """
-    Разархивирует скачанный update.zip.
+def update_from_github(repo: str = REPO, branch: str = BRANCH) -> str:
+    archive_url = f"https://github.com/{repo}/archive/refs/heads/{branch}.zip"
+    project_root = Path.cwd()
 
-    :return: название папки с обновлением (storage/cache/update/<папка с обновлением>) или 1, если произошла ошибка.
-    """
-    return 1
+    with tempfile.TemporaryDirectory(prefix="fpcr-update-") as tmp:
+        tmp_dir = Path(tmp)
+        zip_path = tmp_dir / "source.zip"
+        extract_dir = tmp_dir / "source"
 
+        with urllib.request.urlopen(archive_url, timeout=60) as response:
+            zip_path.write_bytes(response.read())
 
-def install_release(folder_name: str) -> int:
-    """
-    Устанавливает обновление.
+        with zipfile.ZipFile(zip_path) as archive:
+            archive.extractall(extract_dir)
 
-    :param folder_name: название папки со скачанным обновлением в storage/cache/update
-    :return: 0, если обновление установлено.
-        1 - произошла непредвиденная ошибка.
-        2 - папка с обновлением отсутствует.
-    """
-    return 1
+        source_root = _find_source_root(extract_dir)
+        source_names = {p.name for p in source_root.iterdir() if not _is_excluded(p)}
+
+        for current in project_root.iterdir():
+            if _is_excluded(current):
+                continue
+            if current.name not in source_names:
+                _remove_path(current, project_root)
+
+        for source in source_root.iterdir():
+            if _is_excluded(source):
+                continue
+            _copy_path(source, project_root / source.name, project_root)
+
+    return f"Обновление из {repo}@{branch} установлено."

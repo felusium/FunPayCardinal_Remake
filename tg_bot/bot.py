@@ -24,7 +24,7 @@ import logging
 
 from telebot.types import InlineKeyboardMarkup as K, InlineKeyboardButton as B, Message, CallbackQuery, BotCommand
 from tg_bot import utils, static_keyboards as skb, keyboards as kb, CBT
-from Utils import cardinal_tools
+from Utils import cardinal_tools, updater
 from locales.localizer import Localizer
 
 logger = logging.getLogger("TGBot")
@@ -549,6 +549,30 @@ class TGBot:
                 logger.debug("TRACEBACK", exc_info=True)
                 self.bot.send_message(m.chat.id, _("logfile_error"))
 
+    def del_logs(self, m: Message):
+        """
+        Удаляет старые файлы логов, не трогая текущий logs/log.log.
+        """
+        logs_dir = os.path.abspath("logs")
+        current_log = os.path.abspath(os.path.join(logs_dir, "log.log"))
+        if not os.path.isdir(logs_dir):
+            self.bot.send_message(m.chat.id, "Старых логов не найдено.")
+            return
+
+        deleted = 0
+        for name in os.listdir(logs_dir):
+            path = os.path.abspath(os.path.join(logs_dir, name))
+            if not path.startswith(logs_dir + os.sep) or path == current_log or not os.path.isfile(path):
+                continue
+            try:
+                os.remove(path)
+                deleted += 1
+            except OSError:
+                logger.warning("Не удалось удалить старый лог-файл %s", path)
+                logger.debug("TRACEBACK", exc_info=True)
+
+        self.bot.send_message(m.chat.id, f"✅ Удалено старых лог-файлов: <code>{deleted}</code>")
+
     def send_help(self, m: Message):
         """
         Отправляет список скрытых команд.
@@ -565,7 +589,15 @@ class TGBot:
         self.bot.send_message(m.chat.id, "Обновления отключены. Обновляй скрипт вручную, когда сам решишь.")
 
     def update(self, m: Message):
-        self.bot.send_message(m.chat.id, "Обновления отключены. Автоматическая замена файлов запрещена.")
+        self.bot.send_message(m.chat.id, "Скачиваю обновление из felusium/FunPayCardinal_Remake...")
+        try:
+            result = updater.update_from_github()
+        except Exception as e:
+            logger.error("Не удалось установить обновление из GitHub.")
+            logger.debug("TRACEBACK", exc_info=True)
+            self.bot.send_message(m.chat.id, f"❌ Не удалось обновиться: <code>{utils.escape(str(e))}</code>")
+            return
+        self.bot.send_message(m.chat.id, f"✅ {utils.escape(result)}\n\nПерезапусти бота командой /restart.")
 
     def send_system_info(self, m: Message):
         """
@@ -1064,7 +1096,9 @@ class TGBot:
         self.msg_handler(self.unban, func=lambda m: self.check_state(m.chat.id, m.from_user.id, CBT.UNBAN))
         self.msg_handler(self.send_ban_list, commands=["black_list"])
         self.msg_handler(self.send_logs, commands=["logs"])
+        self.msg_handler(self.del_logs, commands=["del_logs"])
         self.msg_handler(self.send_help, commands=["help"])
+        self.msg_handler(self.update, commands=["update"])
         self.msg_handler(self.restart_cardinal, commands=["restart"])
         self.cbq_handler(self.send_review_reply_text, lambda c: c.data.startswith(f"{CBT.SEND_REVIEW_REPLY_TEXT}:"))
 
@@ -1160,6 +1194,10 @@ class TGBot:
         Устанавливает меню команд.
         """
         for lang in (None, *localizer.languages.keys()):
+            if lang is None:
+                self.bot.delete_my_commands()
+            else:
+                self.bot.delete_my_commands(language_code=lang)
             commands = [BotCommand(f"/{i}", _(self.commands[i], language=lang)) for i in self.commands]
             self.bot.set_my_commands(commands, language_code=lang)
 

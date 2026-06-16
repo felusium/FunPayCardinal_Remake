@@ -430,7 +430,6 @@ desc_proxy = "Тут ти можеш налаштувати проксі."
 cmd_menu = "Настройки"
 cmd_language = "змінити мову"
 cmd_profile = "Профиль"
-cmd_golden_key = "Изменить Ключ"
 cmd_help = "Помощь"
 cmd_test_lot = "створити ключ видачі"
 cmd_ban = "додати користувача до ЧС"
@@ -442,7 +441,9 @@ hidden_commands_help = """<b>Скрытые команды:</b>
 
 /restart - перезапустить бота
 /logs - загрузить текущий лог-файл
+/del_logs - удалить старые лог-файлы
 /gkey - изменить golden_key
+/update - обновиться из felusium/FunPayCardinal_Remake
 /ban - добавить пользователя в ЧС
 /unban - удалить пользователя из ЧС
 /black_list - показать черный список

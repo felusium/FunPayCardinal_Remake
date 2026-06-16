@@ -30,6 +30,7 @@ import logging.config
 import colorama
 import sys
 import os
+import shutil
 from cardinal import Cardinal
 import Utils.exceptions as excs
 from locales.localizer import Localizer
@@ -69,6 +70,47 @@ if getattr(sys, 'frozen', False):
     os.chdir(os.path.dirname(sys.executable))
 else:
     os.chdir(os.path.dirname(__file__))
+
+
+def cleanup_runtime_cache():
+    root = os.path.abspath(os.getcwd())
+    skip_dirs = {
+        ".git", ".github", ".venv", "venv", "env",
+        "configs", "plugins", "storage", "release", "build", "dist", "update"
+    }
+
+    for current_root, dirs, files in os.walk(root, topdown=True):
+        dirs[:] = [d for d in dirs if d not in skip_dirs]
+        if "__pycache__" in dirs:
+            cache_dir = os.path.join(current_root, "__pycache__")
+            shutil.rmtree(cache_dir, ignore_errors=True)
+            dirs.remove("__pycache__")
+
+        for file_name in files:
+            if file_name.endswith((".pyc", ".pyo")):
+                try:
+                    os.remove(os.path.join(current_root, file_name))
+                except OSError:
+                    pass
+
+    logs_dir = os.path.abspath(os.path.join(root, "logs"))
+    active_log = os.path.join(logs_dir, "log.log")
+    if not os.path.isdir(logs_dir):
+        return
+
+    for file_name in os.listdir(logs_dir):
+        file_path = os.path.abspath(os.path.join(logs_dir, file_name))
+        if not file_path.startswith(logs_dir + os.sep):
+            continue
+        if file_path == active_log or not os.path.isfile(file_path):
+            continue
+        try:
+            os.remove(file_path)
+        except OSError:
+            pass
+
+
+cleanup_runtime_cache()
 
 folders = ["configs", "logs", "storage", "storage/cache", "storage/plugins", "storage/products", "plugins"]
 for i in folders:
