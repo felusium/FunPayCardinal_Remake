@@ -1190,6 +1190,8 @@ class TGBot:
         """
         if command not in self.visible_commands:
             return
+        if command == "old":
+            help_text = "Список #"
         self.commands[command] = help_text
 
     def setup_commands(self):
