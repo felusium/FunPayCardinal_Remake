@@ -75,7 +75,7 @@ class TGBot:
             "profile": "cmd_profile",
             "help": "cmd_help",
         }
-        self.visible_commands = ("menu", "profile", "help")
+        self.visible_commands = ("menu", "profile", "old", "help")
         self.__default_notification_settings = {
             utils.NotificationTypes.ad: 1,
             utils.NotificationTypes.announcement: 1
