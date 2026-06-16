@@ -73,7 +73,6 @@ class TGBot:
         self.commands = {
             "menu": "cmd_menu",
             "profile": "cmd_profile",
-            "gkey": "cmd_golden_key",
             "help": "cmd_help",
         }
         self.__default_notification_settings = {

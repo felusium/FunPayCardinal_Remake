@@ -139,8 +139,16 @@ class Account:
             status_forcelist=[500, 502, 503, 504],
             allowed_methods={"GET", "POST"}
         )
+        self.cookies = {}
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("https://", adapter)
+
+    def __update_cookies(self, response: requests.Response) -> None:
+        cookies = response.cookies.get_dict()
+        for key, value in cookies.items():
+            if key in ("PHPSESSID", "fav_games"):
+                continue
+            self.cookies[key] = value
 
     def method(self, request_method: Literal["post", "get"], api_method: str, headers: dict, payload: Any,
                exclude_phpsessid: bool = False, raise_not_200: bool = False,
@@ -180,12 +188,14 @@ class Account:
 
         if self.is_funpay_api_method(api_method):
             cookies = {"golden_key": self.golden_key}
+            cookies.update(self.cookies)
             if self.phpsessid:
                 cookies["PHPSESSID"] = self.phpsessid
             link = self.normalize_url(api_method, locale)
         else:
             cookies = {"golden_key": self.golden_key,
                        "cookie_prefs": "1"}
+            cookies.update(self.cookies)
             if self.phpsessid and not exclude_phpsessid:
                 cookies["PHPSESSID"] = self.phpsessid
 
@@ -210,6 +220,7 @@ class Account:
         while i < 10 or response.status_code == 429:
             i += 1
             response = self.session.request(url=link, data=payload, allow_redirects=False, **kwargs)
+            self.__update_cookies(response)
             if response.status_code == 429:
                 self.last_429_err_time = time.time()
                 time.sleep(min(2 ** i, 30))
@@ -223,6 +234,7 @@ class Account:
 
         else:
             response = self.session.request(url=link, data=payload, allow_redirects=True, **kwargs)
+            self.__update_cookies(response)
 
         if response.status_code == 403:
             raise exceptions.UnauthorizedError(response)
@@ -1144,7 +1156,7 @@ class Account:
         return json_response
 
     def raise_lots(self, category_id: int, subcategories: Optional[list[int | types.SubCategory]] = None,
-                   exclude: list[int] | None = None) -> bool:
+                   exclude: list[int] | None = None) -> int:
         """
         Поднимает все лоты всех подкатегорий переданной категории (игры).
 
@@ -1158,8 +1170,8 @@ class Account:
         :param exclude: ID подкатегорий, которые не нужно поднимать.
         :type exclude: :obj:`list` of :obj:`int`, опционально.
 
-        :return: `True`
-        :rtype: :obj:`bool`
+        :return: через сколько секунд можно повторно поднимать лоты.
+        :rtype: :obj:`int`
         """
         if not self.is_initiated:
             raise exceptions.AccountNotInitiatedError()
@@ -1195,13 +1207,14 @@ class Account:
         response = self.method("post", "lots/raise", headers, payload, raise_not_200=True)
         json_response = response.json()
         logger.debug(f"Ответ FunPay (поднятие категорий): {json_response}.")  # locale
+        wait_time = json_response.get("wait")
         if not json_response.get("error") and not json_response.get("url"):
-            return True
+            return wait_time
         elif json_response.get("url"):
-            raise exceptions.RaiseError(response, category, json_response.get("url"), 7200)
+            raise exceptions.RaiseError(response, category, json_response.get("url"), wait_time or 7200)
         elif json_response.get("error") and json_response.get("msg") and \
                 any([i in json_response.get("msg") for i in ("Подождите ", "Please wait ", "Зачекайте ")]):
-            wait_time = utils.parse_wait_time(json_response.get("msg"))
+            wait_time = wait_time or utils.parse_wait_time(json_response.get("msg"))
             raise exceptions.RaiseError(response, category, json_response.get("msg"), wait_time)
         else:
             raise exceptions.RaiseError(response, category, json_response.get("msg"), None)
