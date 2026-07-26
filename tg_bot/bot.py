@@ -388,7 +388,7 @@ class TGBot:
 
     def change_uah_rate(self, m: Message):
         """
-        Показывает или меняет курс отображения RUB -> UAH.
+        Показывает или меняет курс отображения UAH.
         """
         parts = m.text.split(maxsplit=1)
         if len(parts) == 1:
@@ -418,7 +418,7 @@ class TGBot:
 
     def change_usdt_rate(self, m: Message):
         """
-        Показывает, меняет или обновляет курс FunPay RUB -> USDT.
+        Показывает, меняет или обновляет внутренний курс FunPay.
         """
         parts = m.text.split(maxsplit=1)
         if len(parts) == 1:
@@ -476,7 +476,7 @@ class TGBot:
         try:
             new_account.get()
         except:
-            logger.warning("Произошла ошибка")  # locale
+            logger.warning("Сталася помилка")  # locale
             logger.debug("TRACEBACK", exc_info=True)
             self.bot.send_message(m.chat.id, _("cookie_error"))
             return
@@ -488,7 +488,7 @@ class TGBot:
             try:
                 self.cardinal.account.get()
             except:
-                logger.warning("Произошла ошибка")  # locale
+                logger.warning("Сталася помилка")  # locale
                 logger.debug("TRACEBACK", exc_info=True)
                 self.bot.send_message(m.chat.id, _("cookie_error"))
                 return
@@ -582,9 +582,6 @@ class TGBot:
         if amount <= 0:
             raise ValueError
 
-        if any(marker in amount_text for marker in ("rub", "руб", "₽")):
-            return amount
-
         return amount * currency.get_funpay_rub_to_usd_rate(self.cardinal.MAIN_CFG) / \
             currency.get_uah_rate(self.cardinal.MAIN_CFG)
 
@@ -597,7 +594,7 @@ class TGBot:
         try:
             wallets = self.cardinal.account.get_withdraw_wallets("rub")
         except Exception as e:
-            logger.warning("Не удалось получить список кошельков FunPay.")
+            logger.warning("Не вдалося отримати список гаманців FunPay.")
             logger.debug("TRACEBACK", exc_info=True)
             self.bot.edit_message_text(_("withdraw_wallets_error", self._withdraw_error_text(e)), msg.chat.id, msg.id)
             return
@@ -645,7 +642,7 @@ class TGBot:
             self.bot.reply_to(m, _("withdraw_amount_error"))
             return
         except Exception as e:
-            logger.warning("Не удалось обновить баланс перед выводом средств.")
+            logger.warning("Не вдалося оновити баланс перед виводом коштів.")
             logger.debug("TRACEBACK", exc_info=True)
             self.bot.send_message(m.chat.id, _("withdraw_preview_error", self._withdraw_error_text(e)))
             return
@@ -660,7 +657,7 @@ class TGBot:
             amount_ext = self.cardinal.account.calc_withdraw(wallet["currency_id"], wallet["ext_currency_id"],
                                                              wallet["wallet"], amount_int)
         except Exception as e:
-            logger.warning("Не удалось рассчитать вывод средств.")
+            logger.warning("Не вдалося розрахувати вивід коштів.")
             logger.debug("TRACEBACK", exc_info=True)
             self.bot.send_message(m.chat.id, _("withdraw_preview_error", self._withdraw_error_text(e)))
             return
@@ -708,7 +705,7 @@ class TGBot:
                 self.set_state(c.message.chat.id, c.message.id, c.from_user.id, CBT.WITHDRAW_2FA, session)
                 self.bot.answer_callback_query(c.id)
                 return
-            logger.warning("Не удалось выполнить вывод средств.")
+            logger.warning("Не вдалося виконати вивід коштів.")
             logger.debug("TRACEBACK", exc_info=True)
             self.withdraw_sessions.pop(key, None)
             self.bot.edit_message_text(_("withdraw_failed", self._withdraw_error_text(e)),
@@ -745,7 +742,7 @@ class TGBot:
                                                                amount_int=session["amount_int"])
             amount_int = amount_int if amount_int is not None else session["amount_int"]
         except Exception as e:
-            logger.warning("Не удалось выполнить вывод средств с кодом подтверждения.")
+            logger.warning("Не вдалося виконати вивід коштів з кодом підтвердження.")
             logger.debug("TRACEBACK", exc_info=True)
             self.withdraw_sessions.pop(self._withdraw_key(m.chat.id, m.from_user.id), None)
             self.bot.send_message(m.chat.id, _("withdraw_failed", self._withdraw_error_text(e)))
@@ -861,7 +858,7 @@ class TGBot:
                     else:
                         self.bot.send_message(m.chat.id, _("logfile_no_errors"))
             except:
-                logger.warning("Не удалось отправить лог-файл")
+                logger.warning("Не вдалося відправити лог-файл")
                 logger.debug("TRACEBACK", exc_info=True)
                 self.bot.send_message(m.chat.id, _("logfile_error"))
 
@@ -884,7 +881,7 @@ class TGBot:
                 os.remove(path)
                 deleted += 1
             except OSError:
-                logger.warning("Не удалось удалить старый лог-файл %s", path)
+                logger.warning("Не вдалося видалити старий лог-файл %s", path)
                 logger.debug("TRACEBACK", exc_info=True)
 
         self.bot.send_message(m.chat.id, _("logfile_old_deleted", deleted))
@@ -909,7 +906,7 @@ class TGBot:
         try:
             result = updater.update_from_github()
         except Exception as e:
-            logger.error("Не удалось установить обновление из GitHub.")
+            logger.error("Не вдалося встановити оновлення з GitHub.")
             logger.debug("TRACEBACK", exc_info=True)
             self.bot.send_message(m.chat.id, _("update_failed", utils.escape(str(e))))
             return
@@ -1300,7 +1297,6 @@ class TGBot:
         #
         section = c.data.split(":")[1]
         sections = {
-            "lang": (_("desc_lang"), kb.language_settings, [self.cardinal]),
             "main": (_("desc_gs"), kb.main_settings, [self.cardinal]),
             "tg": (_("desc_ns", c.message.chat.id), kb.notifications_settings,
                    [self.cardinal, c.message.chat.id, c.from_user.id]),
@@ -1355,23 +1351,6 @@ class TGBot:
 
     def empty_callback(self, c: CallbackQuery):
         self.bot.answer_callback_query(c.id)
-
-    def switch_lang(self, c: CallbackQuery):
-        lang = c.data.split(":")[1]
-        Localizer(lang)
-        self.cardinal.MAIN_CFG["Other"]["language"] = lang
-        self.cardinal.save_config(self.cardinal.MAIN_CFG, "configs/_main.cfg")
-        if localizer.current_language == "en":
-            self.bot.answer_callback_query(c.id, "The translation may be incomplete and contain errors.\n\n"
-                                                 "If you find errors in the translation, check the locale files.\n\n"
-                                                 "Thank you :)", show_alert=True)
-        elif localizer.current_language == "uk":
-            self.bot.answer_callback_query(c.id, _("lang_warning_uk"), show_alert=True)
-        elif localizer.current_language == "ru":
-            self.bot.answer_callback_query(c.id, '«А я сейчас вам покажу, откуда на Беларусь готовилось нападение»',
-                                           show_alert=True)
-        c.data = f"{CBT.CATEGORY}:lang"
-        self.open_settings_section(c)
 
     def __register_handlers(self):
         """
@@ -1447,7 +1426,6 @@ class TGBot:
         self.cbq_handler(self.cancel_action, lambda c: c.data == CBT.CLEAR_STATE)
         self.cbq_handler(self.send_old_mode_help_text, lambda c: c.data == CBT.OLD_MOD_HELP)
         self.cbq_handler(self.empty_callback, lambda c: c.data == CBT.EMPTY)
-        self.cbq_handler(self.switch_lang, lambda c: c.data.startswith(f"{CBT.LANG}:"))
 
     def send_notification(self, text: str | None, keyboard: K | None = None,
                           notification_type: str = utils.NotificationTypes.other, photo: bytes | None = None,
@@ -1522,7 +1500,12 @@ class TGBot:
         Устанавливает меню команд.
         """
         commands = [(command, self.commands[command]) for command in self.visible_commands if command in self.commands]
-        for lang in (None, *localizer.languages.keys()):
+        for old_lang in ("ru", "en"):
+            try:
+                self.bot.delete_my_commands(language_code=old_lang)
+            except Exception:
+                logger.debug("TRACEBACK", exc_info=True)
+        for lang in (None, "uk"):
             if lang is None:
                 self.bot.delete_my_commands()
             else:

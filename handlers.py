@@ -212,7 +212,7 @@ def old_send_new_msg_notification_handler(c: Cardinal, e: LastChatMessageChanged
     if any([not c.old_mode_enabled, not c.telegram, not e.chat.unread,
             c.bl_msg_notification_enabled and e.chat.name in c.blacklist,
             e.chat.last_message_type is not MessageTypes.NON_SYSTEM, str(e.chat).strip().lower() in c.AR_CFG.sections(),
-            str(e.chat).startswith("!автовыдача")]):
+            str(e.chat).startswith(("!автовидача", "!автовыдача"))]):
         return
     user = e.chat.name
     if user in c.blacklist:
@@ -274,7 +274,7 @@ def send_new_msg_notification_handler(c: Cardinal, e: NewMessageEvent) -> None:
         message_text = str(e.message)
         if message_text.strip().lower() in c.AR_CFG.sections() and len(events) < 2:
             return
-        elif message_text.startswith("!автовыдача") and len(events) < 2:
+        elif message_text.startswith(("!автовидача", "!автовыдача")) and len(events) < 2:
             return
         if i.message.author_id == last_message_author_id and i.message.by_bot == last_by_bot and \
                 i.message.badge == last_badge and i.message.by_vertex == last_by_vertex:
@@ -344,16 +344,16 @@ def process_review_handler(c: Cardinal, e: NewMessageEvent | LastChatMessageChan
         try:
             order = c.get_order_from_object(obj)
             if order is None:
-                raise Exception("Не удалось получить объект заказа.")  # locale
+                raise Exception("Не вдалося отримати об'єкт замовлення.")  # locale
         except:
-            logger.error(f"Не удалось получить информацию о заказе для сообщения: \"{message_text}\".")  # locale
+            logger.error(f"Не вдалося отримати інформацію про замовлення для повідомлення: \"{message_text}\".")  # locale
             logger.debug("TRACEBACK", exc_info=True)
             return
 
         if not order.review or not order.review.stars:
             return
 
-        logger.info(f"Изменен отзыв на заказ #{order.id}.")  # locale
+        logger.info(f"Змінено відгук на замовлення #{order.id}.")  # locale
 
         toggle = f"star{order.review.stars}Reply"
         text = f"star{order.review.stars}ReplyText"
@@ -385,7 +385,7 @@ def process_review_handler(c: Cardinal, e: NewMessageEvent | LastChatMessageChan
                 reply_text = format_text4review(reply_text)
                 c.account.send_review(order.id, reply_text)
             except:
-                logger.error(f"Произошла ошибка при ответе на отзыв {order.id}.")  # locale
+                logger.error(f"Сталася помилка при відповіді на відгук {order.id}.")  # locale
                 logger.debug("TRACEBACK", exc_info=True)
         send_review_notification(c, order, chat_id, reply_text)
 
@@ -415,7 +415,7 @@ def send_command_notification_handler(c: Cardinal, e: NewMessageEvent | LastChat
         return
 
     if not c.AR_CFG[command].get("notificationText"):
-        text = f"🧑‍💻 Пользователь <b><i>{username}</i></b> ввел команду <code>{utils.escape(command)}</code>."  # locale
+        text = f"🧑‍💻 Користувач <b><i>{username}</i></b> ввів команду <code>{utils.escape(command)}</code>."  # locale
     else:
         text = cardinal_tools.format_msg_text(c.AR_CFG[command]["notificationText"], obj)
 
@@ -434,17 +434,17 @@ def test_auto_delivery_handler(c: Cardinal, e: NewMessageEvent | LastChatMessage
     else:
         obj, message_text, chat_name, chat_id = e.chat, str(e.chat), e.chat.name, e.chat.id
 
-    if not message_text.startswith("!автовыдача"):
+    if not message_text.startswith(("!автовидача", "!автовыдача")):
         return
 
     split = message_text.split()
     if len(split) < 2:
-        logger.warning("Одноразовый ключ автовыдачи не обнаружен.")  # locale
+        logger.warning("Одноразовий ключ автовидачі не знайдено.")  # locale
         return
 
     key = split[1].strip()
     if key not in c.delivery_tests:
-        logger.warning("Невалидный одноразовый ключ автовыдачи.")  # locale
+        logger.warning("Невалідний одноразовий ключ автовидачі.")  # locale
         return
 
     lot_name = c.delivery_tests[key]
@@ -469,7 +469,7 @@ def send_categories_raised_notification_handler(c: Cardinal, cat: types.Category
     if not c.telegram:
         return
 
-    text = f"""⤴️<b><i>Поднял все лоты категории</i></b> <code>{cat.name}</code>\n<tg-spoiler>{error_text}</tg-spoiler>"""  # locale
+    text = f"""⤴️<b><i>Підняв усі лоти категорії</i></b> <code>{cat.name}</code>\n<tg-spoiler>{error_text}</tg-spoiler>"""  # locale
     Thread(target=c.telegram.send_notification,
            args=(text,),
            kwargs={"notification_type": utils.NotificationTypes.lots_raise}, daemon=True).start()
@@ -503,7 +503,7 @@ def log_new_order_handler(c: Cardinal, e: NewOrderEvent, *args):
     """
     Логирует новый заказ.
     """
-    logger.info(f"Новый заказ! ID: $YELLOW#{e.order.id}$RESET")
+    logger.info(f"Нове замовлення! ID: $YELLOW#{e.order.id}$RESET")
 
 
 def setup_event_attributes_handler(c: Cardinal, e: NewOrderEvent, *args):
@@ -547,9 +547,9 @@ def setup_event_attributes_handler(c: Cardinal, e: NewOrderEvent, *args):
         setattr(e, i, attributes[i])
 
     if config_section_obj is None:
-        logger.info("Лот не найден в конфиге авто-выдачи!")  # todo
+        logger.info("Лот не знайдено в конфігу автовидачі!")  # todo
     else:
-        logger.info("Лот найден в конфиге авто-выдачи!")  # todo
+        logger.info("Лот знайдено в конфігу автовидачі!")  # todo
 
 
 def send_new_order_notification_handler(c: Cardinal, e: NewOrderEvent, *args):
@@ -601,22 +601,22 @@ def deliver_goods(c: Cardinal, e: NewOrderEvent, *args):
             delivery_text = delivery_text.replace("$product", "\n".join(products).replace("\\n", "\n"))
     except Exception as exc:
         logger.error(
-            f"Произошла ошибка при получении товаров для заказа $YELLOW{e.order.id}: {str(exc)}$RESET")  # locale
+            f"Сталася помилка при отриманні товарів для замовлення $YELLOW{e.order.id}: {str(exc)}$RESET")  # locale
         logger.debug("TRACEBACK", exc)
         setattr(e, "error", 1)
         setattr(e, "error_text",
-                f"Произошла ошибка при получении товаров для заказа {e.order.id}: {str(exc)}")  # locale
+                f"Сталася помилка при отриманні товарів для замовлення {e.order.id}: {str(exc)}")  # locale
         return
 
     result = c.send_message(chat_id, delivery_text, e.order.buyer_username)
     if not result:
-        logger.error(f"Не удалось отправить товар для ордера $YELLOW{e.order.id}$RESET.")  # locale
+        logger.error(f"Не вдалося відправити товар для замовлення $YELLOW{e.order.id}$RESET.")  # locale
         setattr(e, "error", 1)
-        setattr(e, "error_text", f"Не удалось отправить сообщение с товаром для заказа {e.order.id}.")  # locale
+        setattr(e, "error_text", f"Не вдалося відправити повідомлення з товаром для замовлення {e.order.id}.")  # locale
         if file_name and products:
             cardinal_tools.add_products(f"storage/products/{file_name}", products, at_zero_position=True)
     else:
-        logger.info(f"Товар для заказа {e.order.id} выдан.")  # locale
+        logger.info(f"Товар для замовлення {e.order.id} видано.")  # locale
         setattr(e, "delivered", True)
         setattr(e, "delivery_text", delivery_text)
         setattr(e, "goods_delivered", amount)
@@ -630,14 +630,14 @@ def deliver_product_handler(c: Cardinal, e: NewOrderEvent, *args) -> None:
     if not c.MAIN_CFG["FunPay"].getboolean("autoDelivery"):
         return
     if e.order.buyer_username in c.blacklist and c.bl_delivery_enabled:
-        logger.info(f"Пользователь {e.order.buyer_username} находится в ЧС и включена блокировка автовыдачи. "
+        logger.info(f"Користувач {e.order.buyer_username} у чорному списку, блокування автовидачі увімкнено. "
                     f"$YELLOW(ID: {e.order.id})$RESET")  # locale
         return
 
     if (config_section_obj := getattr(e, "config_section_obj")) is None:
         return
     if config_section_obj.getboolean("disable"):
-        logger.info(f"Для лота \"{e.order.description}\" отключена автовыдача.")  # locale
+        logger.info(f"Для лота \"{e.order.description}\" вимкнено автовидачу.")  # locale
         return
 
     c.run_handlers(c.pre_delivery_handlers, (c, e))
@@ -657,16 +657,16 @@ def send_delivery_notification_handler(c: Cardinal, e: NewOrderEvent):
         text = f"""❌ <code>{getattr(e, "error_text")}</code>"""
     else:
         amount = "<b>∞</b>" if getattr(e, "goods_left") == -1 else f"<code>{getattr(e, 'goods_left')}</code>"
-        text = f"""✅ Успешно выдал товар для ордера <code>{e.order.id}</code>.\n
+        text = f"""✅ Успішно видав товар для замовлення <code>{e.order.id}</code>.\n
 🛒 <b><i>Товар:</i></b>
 <code>{utils.escape(getattr(e, "delivery_text"))}</code>\n
-📋 <b><i>Осталось товаров: </i></b>{amount}"""  # locale
+📋 <b><i>Залишилося товарів: </i></b>{amount}"""  # locale
 
     Thread(target=c.telegram.send_notification, args=(text,),
            kwargs={"notification_type": utils.NotificationTypes.delivery}, daemon=True).start()
 
 def update_current_lots(c: Cardinal, e: NewOrderEvent):
-    logger.info("Получаю информацию о лотах...")  # locale
+    logger.info("Отримую інформацію про лоти...")  # locale
     attempts = 3
     while attempts:
         try:
@@ -674,12 +674,12 @@ def update_current_lots(c: Cardinal, e: NewOrderEvent):
             c.curr_profile_last_tag = e.runner_tag
             break
         except:
-            logger.error("Произошла ошибка при получении информации о лотах.")  # locale
+            logger.error("Сталася помилка при отриманні інформації про лоти.")  # locale
             logger.debug("TRACEBACK", exc_info=True)
             attempts -= 1
             time.sleep(2)
     else:
-        logger.error("Не удалось получить информацию о лотах: превышено кол-во попыток.")  # locale
+        logger.error("Не вдалося отримати інформацію про лоти: перевищено кількість спроб.")  # locale
         return
 
 
@@ -713,23 +713,23 @@ def update_lot_state(cardinal: Cardinal, lot: types.LotShortcut, task: int) -> b
             elif task == 1:
                 lot_fields.active = True
                 cardinal.account.save_lot(lot_fields)
-                logger.info(f"Восстановил лот $YELLOW{lot.id} - {lot.description}$RESET.")  # locale
+                logger.info(f"Відновив лот $YELLOW{lot.id} - {lot.description}$RESET.")  # locale
             elif task == -1:
                 lot_fields.active = False
                 cardinal.account.save_lot(lot_fields)
-                logger.info(f"Деактивировал лот $YELLOW{lot.id} - {lot.description}$RESET.")  # locale
+                logger.info(f"Деактивував лот $YELLOW{lot.id} - {lot.description}$RESET.")  # locale
             return True
         except Exception as e:
             if isinstance(e, exceptions.LotParsingError):
-                logger.error(f"Произошла ошибка при изменении состояния лота $YELLOW{lot.description}$RESET:"  # locale
-                             "лот не найден.")
+                logger.error(f"Сталася помилка при зміні стану лота $YELLOW{lot.description}$RESET:"  # locale
+                             "лот не знайдено.")
                 return False
-            logger.error(f"Произошла ошибка при изменении состояния лота $YELLOW{lot.description}$RESET.")  # locale
+            logger.error(f"Сталася помилка при зміні стану лота $YELLOW{lot.description}$RESET.")  # locale
             logger.debug("TRACEBACK", exc_info=True)
             attempts -= 1
             time.sleep(2)
     logger.error(
-        f"Не удалось изменить состояние лота $YELLOW{lot.description}$RESET: превышено кол-во попыток.")  # locale
+        f"Не вдалося змінити стан лота $YELLOW{lot.description}$RESET: перевищено кількість спроб.")  # locale
     return False
 
 
@@ -794,7 +794,7 @@ def update_lots_states(cardinal: Cardinal, event: NewOrderEvent):
 
     if deactivated:
         lots = "\n".join(deactivated)  # locale
-        text = f"""🔴 <b>Деактивировал лоты:</b>
+        text = f"""🔴 <b>Деактивував лоти:</b>
         
 <code>{lots}</code>"""
         if cardinal.telegram:
@@ -802,7 +802,7 @@ def update_lots_states(cardinal: Cardinal, event: NewOrderEvent):
                    kwargs={"notification_type": utils.NotificationTypes.lots_deactivate}, daemon=True).start()
     if restored:
         lots = "\n".join(restored)  # locale
-        text = f"""🟢 <b>Активировал лоты:</b>
+        text = f"""🟢 <b>Активував лоти:</b>
 
 <code>{lots}</code>"""
         if cardinal.telegram:
@@ -818,7 +818,7 @@ def update_profiles_handler(cardinal: Cardinal, event: NewOrderEvent | OrdersLis
             update_profile_lots(c, e)
             update_lots_states(c, e)
         except:
-            logger.warning("Произошла ошибка при обновлении информации о профилях и состояний лотов.")
+            logger.warning("Сталася помилка при оновленні інформації про профілі та стани лотів.")
             logger.debug("TRACEBACK", exc_info=True)
 
     if event.runner_tag != cardinal.last_profile_refresh_event_tag:
@@ -840,9 +840,9 @@ def send_thank_u_message_handler(cardinal: Cardinal, event: OrderStatusChangedEv
         chat_id = chat.id
     else:
         chat_id = event.order.chat_id
-    logger.info(f"Пользователь $YELLOW{event.order.buyer_username}$RESET подтвердил выполнение заказа "  # locale
+    logger.info(f"Користувач $YELLOW{event.order.buyer_username}$RESET підтвердив виконання замовлення "  # locale
                 f"$YELLOW{event.order.id}.$RESET")  # locale
-    logger.info(f"Отправляю ответное сообщение ...")  # locale
+    logger.info(f"Відправляю відповідь ...")  # locale
     Thread(target=cardinal.send_message, args=(chat_id, text, event.order.buyer_username), daemon=True).start()
 
 
@@ -863,8 +863,8 @@ def send_order_confirmed_notification_handler(cardinal: Cardinal, event: OrderSt
     price = currency.format_money(event.order.price, event.order.currency, cardinal.MAIN_CFG)
     Thread(target=cardinal.telegram.send_notification,  # locale
            args=(
-               f"""🪙 Пользователь <a href="https://funpay.com/chat/?node={chat_id}">{event.order.buyer_username}</a> """
-               f"""подтвердил выполнение заказа <code>{event.order.id}</code>. (<code>{price}</code>)""",
+                f"""🪙 Користувач <a href="https://funpay.com/chat/?node={chat_id}">{event.order.buyer_username}</a> """
+                f"""підтвердив виконання замовлення <code>{event.order.id}</code>. (<code>{price}</code>)""",
                keyboards.new_order(event.order.id, event.order.buyer_username, chat_id),
                utils.NotificationTypes.order_confirmed),
            daemon=True).start()

@@ -122,10 +122,10 @@ def validate_proxy(proxy: str):
 
     ip_parts = ip.split(".")
     if len(ip_parts) != 4 or not all(part.isdigit() and 0 <= int(part) < 256 for part in ip_parts):
-        raise ValueError("Неправильный IP")
+        raise ValueError("Неправильний IP")
 
     if not port.isdigit() or not 0 < int(port) <= 65535:
-        raise ValueError("Неправильный порт")
+        raise ValueError("Неправильний порт")
 
     if scheme not in ("http", "https", "socks5", "socks5h"):
         raise ValueError("Схема прокси должна быть http, https, socks5 или socks5h")
@@ -173,7 +173,7 @@ def load_proxy_dict() -> dict[int, str]:
                 try:
                     proxy_dict[int(id_)] = build_proxy(*validate_proxy(proxy_str))
                 except:
-                    logger.debug(f"Не удалось добавить {proxy_str}")
+                    logger.debug(f"Не вдалося додати {proxy_str}")
                     logger.debug("TRACEBACK", exc_info=True)
         except json.decoder.JSONDecodeError:
             return {}
@@ -278,20 +278,20 @@ def create_greeting_text(cardinal: Cardinal):
     balance = cardinal.balance
     current_time = datetime.now()
     if current_time.hour < 4:
-        greetings = "Какая прекрасная ночь"  # locale
+        greetings = "Яка чудова ніч"  # locale
     elif current_time.hour < 12:
-        greetings = "Доброе утро"
+        greetings = "Доброго ранку"
     elif current_time.hour < 17:
-        greetings = "Добрый день"
+        greetings = "Добрий день"
     else:
-        greetings = "Добрый вечер"
+        greetings = "Добрий вечір"
 
     lines = [
         f"* {greetings}, $CYAN{account.username}.",
         f"* Ваш ID: $YELLOW{account.id}.",
-        f"* Ваш текущий баланс: $CYAN{currency.format_rub_as_display(balance.total_rub, cardinal.MAIN_CFG, True)} $RESET| $MAGENTA{currency.format_amount(balance.total_usd)} USD $RESET| $YELLOW{currency.format_amount(balance.total_eur)} EUR",
-        f"* Текущие незавершенные сделки: $YELLOW{account.active_sales}.",
-        f"* Удачной торговли!"
+        f"* Поточний баланс: $CYAN{currency.format_rub_as_display(balance.total_rub, cardinal.MAIN_CFG, True)}",
+        f"* Поточні незавершені угоди: $YELLOW{account.active_sales}.",
+        f"* Вдалої торгівлі!"
     ]
 
     length = 60
@@ -471,7 +471,7 @@ def format_order_text(text: str, order: FunPayAPI.types.OrderShortcut | FunPayAP
             game = order.subcategory.category.name
             subcategory = order.subcategory.name
     except:
-        logger.warning("Произошла ошибка при парсинге игры из заказа")  # locale
+        logger.warning("Сталася помилка при парсингу гри із замовлення")  # locale
         logger.debug("TRACEBACK", exc_info=True)
     description = order.description if isinstance(order,
                                                   FunPayAPI.types.OrderShortcut) else order.short_description if order.short_description else ""
@@ -537,7 +537,7 @@ def set_console_title(title: str) -> None:
             import ctypes
             ctypes.windll.kernel32.SetConsoleTitleW(title)
     except:
-        logger.warning("Произошла ошибка при изменении названия консоли")
+        logger.warning("Сталася помилка при зміні назви консолі")
         logger.debug("TRACEBACK", exc_info=True)
 
 

@@ -256,8 +256,6 @@ def generate_profile_text(cardinal: Cardinal) -> str:
 <b>{_("profile_active_orders")}:</b> <code>{account.active_sales}</code>
 <b>{_("profile_balance")}:</b> 
 {_("profile_uah_balance_line", uah_total, uah_available)}
-{_("profile_usd_balance_line", currency.format_amount(balance.total_usd), currency.format_amount(balance.available_usd))}
-{_("profile_eur_balance_line", currency.format_amount(balance.total_eur), currency.format_amount(balance.available_eur))}
 
 <i>{_("profile_updated")}:</i>  <code>{time.strftime('%H:%M:%S', time.localtime(account.last_update))}</code>"""
 

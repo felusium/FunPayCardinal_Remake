@@ -1,9 +1,8 @@
-from typing import Literal
-
-from locales import ru, en, uk
+from locales import uk
 import logging
 
 logger = logging.getLogger("localizer")
+SUPPORTED_LANGUAGE = "uk"
 
 
 class Localizer:
@@ -11,34 +10,25 @@ class Localizer:
         if not hasattr(cls, "instance"):
             cls.instance = super(Localizer, cls).__new__(cls)
             cls.instance.languages = {
-                "ru": ru,
-                "en": en,
                 "uk": uk
             }
-            cls.instance.current_language = "ru"
-        if curr_lang in cls.instance.languages:
-            cls.instance.current_language = curr_lang
-            cls.instance.languages = {k: v for k, v in sorted(cls.instance.languages.items(),
-                                                              key=lambda x: x[0] != curr_lang)}
+            cls.instance.current_language = SUPPORTED_LANGUAGE
+        cls.instance.current_language = SUPPORTED_LANGUAGE
         return cls.instance
 
     def translate(self, variable_name: str, *args, language: str | None = None):
         """
-        Возвращает форматированный локализированный текст.
+        Повертає форматований локалізований текст українською.
 
         :param variable_name: название переменной с текстом.
         :param args: аргументы для форматирования.
-        :param language: язык перевода, опционально.
+        :param language: залишено для сумісності з плагінами.
 
         :return: форматированный локализированный текст.
         """
         text = variable_name
-        for lang in self.languages.values():
-            if hasattr(lang, variable_name):
-                text = getattr(lang, variable_name)
-                break
-        if language and language in self.languages.keys() and hasattr(self.languages[language], variable_name):
-            text = getattr(self.languages[language], variable_name)
+        if hasattr(uk, variable_name):
+            text = getattr(uk, variable_name)
 
         args = list(args)
         formats = text.count("{}")
@@ -50,12 +40,12 @@ class Localizer:
             logger.debug("TRACEBACK", exc_info=True)
             return text
 
-    def add_translation(self, uuid: str, variable_name: str, value: str, language: Literal["uk", "ru", "en"]):
-        """Позволяет добавить перевод фраз из плагина."""
-        setattr(self.languages[language], f"{uuid}_{variable_name}", value)
+    def add_translation(self, uuid: str, variable_name: str, value: str, language: str = "uk"):
+        """Додає переклад фраз із плагіна в українську локаль."""
+        setattr(uk, f"{uuid}_{variable_name}", value)
 
     def plugin_translate(self, uuid: str, variable_name: str, *args, language: str | None = None):
-        """Позволяет получить перевод фраз из плагина."""
+        """Повертає переклад фраз із плагіна українською."""
         s = f"{uuid}_{variable_name}"
         result = self.translate(s, *args, language=language)
         if result != s:

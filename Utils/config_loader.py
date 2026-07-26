@@ -78,7 +78,7 @@ def load_main_config(config_path: str):
             "autoDisable": ["0", "1"],
             "oldMsgGetMode": ["0", "1"],
             "keepSentMessagesUnread": ["0", "1"],
-            "locale": ["ru", "en", "uk"]
+            "locale": ["uk"]
         },
 
         "Telegram": {
@@ -140,7 +140,7 @@ def load_main_config(config_path: str):
         },
 
         "DisplayCurrency": {
-            "currency": ["RUB", "UAH"],
+            "currency": ["UAH"],
             "uahRate": "any",
             "funpayRubToUsdRate": "any",
             "funpayRateUpdatedAt": "any",
@@ -149,7 +149,7 @@ def load_main_config(config_path: str):
 
         "Other": {
             "requestsDelay": [str(i) for i in range(1, 101)],
-            "language": ["ru", "en", "uk"]
+            "language": ["uk"]
         }
     }
 
@@ -187,11 +187,11 @@ def load_main_config(config_path: str):
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)
             elif section_name == "Other" and param_name == "language" and param_name not in config[section_name]:
-                config.set("Other", "language", "ru")
+                config.set("Other", "language", "uk")
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)
-            elif section_name == "Other" and param_name == "language" and config[section_name][param_name] == "eng":
-                config.set("Other", "language", "en")
+            elif section_name == "Other" and param_name == "language" and config[section_name][param_name] != "uk":
+                config.set("Other", "language", "uk")
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)
             elif section_name == "Greetings" and param_name == "greetingsCooldown" and param_name not in config[
@@ -222,7 +222,11 @@ def load_main_config(config_path: str):
                     config.write(f)
             elif section_name == "FunPay" and param_name == "locale" and \
                     param_name not in config[section_name]:
-                config.set(section_name, "locale", "ru")
+                config.set(section_name, "locale", "uk")
+                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
+                    config.write(f)
+            elif section_name == "FunPay" and param_name == "locale" and config[section_name][param_name] != "uk":
+                config.set(section_name, "locale", "uk")
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)
             elif section_name == "Greetings" and param_name == "onlyNewChats" and param_name not in config[
@@ -249,6 +253,11 @@ def load_main_config(config_path: str):
                     config.write(f)
             elif section_name == "DisplayCurrency" and param_name == "currency" and \
                     param_name not in config[section_name]:
+                config.set("DisplayCurrency", "currency", "UAH")
+                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
+                    config.write(f)
+            elif section_name == "DisplayCurrency" and param_name == "currency" and \
+                    config[section_name][param_name] != "UAH":
                 config.set("DisplayCurrency", "currency", "UAH")
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)

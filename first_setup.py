@@ -22,7 +22,7 @@ default_config = {
         "autoRestore": "0",
         "autoDisable": "0",
         "oldMsgGetMode": "0",
-        "locale": "ru"
+        "locale": "uk"
     },
     "Telegram": {
         "enabled": "0",
@@ -54,13 +54,13 @@ default_config = {
         "ignoreSystemMessages": "0",
         "onlyNewChats": "0",
         "sendGreetings": "0",
-        "greetingsText": "Привет, $chat_name!",
+        "greetingsText": "Привіт, $chat_name!",
         "greetingsCooldown": "2"
     },
 
     "OrderConfirm": {
         "sendReply": "0",
-        "replyText": "$username, спасибо за подтверждение заказа $order_id!\nЕсли не сложно, оставь, пожалуйста, отзыв!"
+        "replyText": "$username, дякую за підтвердження замовлення $order_id!\nЯкщо не складно, залиш, будь ласка, відгук!"
     },
 
     "ReviewReply": {
@@ -92,7 +92,7 @@ default_config = {
 
     "Other": {
         "requestsDelay": "4",
-        "language": "ru"
+        "language": "uk"
     }
 }
 
@@ -141,7 +141,7 @@ def input_proxy(set_telebot_proxy: bool = False) -> str | None:
             proxy = build_proxy(scheme, login, password, ip, port)
 
             if not check_proxy({"http": proxy, "https": proxy}):
-                print("\nНевалидные прокси. Попробуй еще раз!")
+                print("\nНевалідні проксі. Спробуй ще раз!")
                 continue
 
             if set_telebot_proxy:
@@ -150,26 +150,26 @@ def input_proxy(set_telebot_proxy: bool = False) -> str | None:
             return proxy
 
         except Exception as ex:
-            print(f"\nНеверный формат прокси: {ex}. Попробуй еще раз!")
+            print(f"\nНеправильний формат проксі: {ex}. Спробуй ще раз!")
 
 def setup_telegram_proxy():
     config = load_main_config("configs/_main.cfg")
     print(
-        f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}" f"Если хочешь использовать IPv4 прокси ДЛЯ ДОСТУПА К TELEGRAM"
-        f" – укажи их в формате scheme://login:password@ip:port, login:password@ip:port или ip:port."
-        f" Если ты не знаешь, " f"что это такое или они тебе не нужны - просто нажми Enter. "
+        f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}" f"Якщо хочеш використовувати IPv4 проксі ДЛЯ ДОСТУПУ ДО TELEGRAM"
+        f" – вкажи їх у форматі scheme://login:password@ip:port, login:password@ip:port або ip:port."
+        f" Якщо ти не знаєш, " f"що це таке або вони тобі не потрібні - просто натисни Enter. "
         f"{Fore.RED}(* ^ ω ^){Style.RESET_ALL}")
     while True:
         try:
             proxy = input_proxy(set_telebot_proxy=True)
             username = telebot.TeleBot(config["Telegram"]["token"]).get_me().username
-            print(f"\n\n{Fore.CYAN}Подключение к Telegram успешно: @{username}...{Style.RESET_ALL}")
+            print(f"\n\n{Fore.CYAN}Підключення до Telegram успішне: @{username}...{Style.RESET_ALL}")
             break
         except Exception as ex:
-            print(f"\n\n{Fore.CYAN}Не удалось добавить прокси: {ex}...{Style.RESET_ALL}")
+            print(f"\n\n{Fore.CYAN}Не вдалося додати проксі: {ex}...{Style.RESET_ALL}")
 
     config.set("Telegram", "proxy", proxy or "")
-    print(f"{Fore.CYAN}Сохраняю конфиг...{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}Зберігаю конфіг...{Style.RESET_ALL}")
     with open("configs/_main.cfg", "w", encoding="utf-8") as f:
         config.write(f)
     time.sleep(5)
@@ -179,42 +179,42 @@ def first_setup():
     config = create_config_obj(default_config)
     sleep_time = 1
 
-    print(f"{Fore.CYAN}{Style.BRIGHT}Привет! {Fore.RED}(`-`)/{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}{Style.BRIGHT}Привіт! {Fore.RED}(`-`)/{Style.RESET_ALL}")
     time.sleep(sleep_time)
 
-    print(f"\n{Fore.CYAN}{Style.BRIGHT}Не могу найти основной конфиг... {Fore.RED}(-_-;). . .{Style.RESET_ALL}")
+    print(f"\n{Fore.CYAN}{Style.BRIGHT}Не можу знайти основний конфіг... {Fore.RED}(-_-;). . .{Style.RESET_ALL}")
     time.sleep(sleep_time)
 
-    print(f"\n{Fore.CYAN}{Style.BRIGHT}Давай ка проведем первичную настройку! {Fore.RED}°++°{Style.RESET_ALL}")
+    print(f"\n{Fore.CYAN}{Style.BRIGHT}Давай проведемо первинне налаштування! {Fore.RED}°++°{Style.RESET_ALL}")
     time.sleep(sleep_time)
 
     while True:
         print(f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}"
-              f"Для начала введи токен (golden_key) твоего FunPay аккаунта (посмотреть его можно в расширении EditThisCookie) {Fore.RED}(._.){Style.RESET_ALL}")
+              f"Для початку введи токен (golden_key) твого FunPay акаунта (його можна подивитися в розширенні EditThisCookie) {Fore.RED}(._.){Style.RESET_ALL}")
         golden_key = input(f"{Fore.MAGENTA}{Style.BRIGHT}└───> {Style.RESET_ALL}").strip()
         if len(golden_key) != 32:
             print(
-                f"\n{Fore.CYAN}{Style.BRIGHT}Неверный формат токена. Попробуй еще раз! {Fore.RED}\(!!˚0˚)/{Style.RESET_ALL}")
+                f"\n{Fore.CYAN}{Style.BRIGHT}Неправильний формат токена. Спробуй ще раз! {Fore.RED}\\(!!˚0˚)/{Style.RESET_ALL}")
             continue
         config.set("FunPay", "golden_key", golden_key)
         break
 
     while True:
         print(f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}"
-              f"Если хочешь, ты можешь указать свой User-agent (введи в Google \"my user agent\"). Или можешь просто нажать Enter. "
-              f"{Fore.RED}¯\(°_o)/¯{Style.RESET_ALL}")
+              f"Якщо хочеш, можеш вказати свій User-agent (введи в Google \"my user agent\"). Або можеш просто натиснути Enter. "
+              f"{Fore.RED}¯\\(°_o)/¯{Style.RESET_ALL}")
         user_agent = input(f"{Fore.MAGENTA}{Style.BRIGHT}└───> {Style.RESET_ALL}").strip()
         if contains_russian(user_agent):
             print(
-                f"\n{Fore.CYAN}{Style.BRIGHT}Ты не знаешь, что такое Google? {Fore.RED}\(!!˚0˚)/{Style.RESET_ALL}")
+                f"\n{Fore.CYAN}{Style.BRIGHT}Ти не знаєш, що таке Google? {Fore.RED}\\(!!˚0˚)/{Style.RESET_ALL}")
             continue
         if user_agent:
             config.set("FunPay", "user_agent", user_agent)
         break
 
-    print(f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}" f"Если хочешь использовать IPv4 прокси ДЛЯ ДОСТУПА К TELEGRAM"
-          f" – укажи их в формате scheme://login:password@ip:port, login:password@ip:port или ip:port."
-          f" Если ты не знаешь, " f"что это такое или они тебе не нужны - просто нажми Enter. " 
+    print(f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}" f"Якщо хочеш використовувати IPv4 проксі ДЛЯ ДОСТУПУ ДО TELEGRAM"
+          f" – вкажи їх у форматі scheme://login:password@ip:port, login:password@ip:port або ip:port."
+          f" Якщо ти не знаєш, " f"що це таке або вони тобі не потрібні - просто натисни Enter. " 
           f"{Fore.RED}(* ^ ω ^){Style.RESET_ALL}")
     proxy = input_proxy(set_telebot_proxy=True)
 
@@ -224,30 +224,30 @@ def first_setup():
 
     while True:
         print(
-            f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}Введи API-токен Telegram-бота (получить его можно у @BotFather). "
+            f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}Введи API-токен Telegram-бота (його можна отримати у @BotFather). "
             f"{Fore.RED}(._.){Style.RESET_ALL}")
         token = input(f"{Fore.MAGENTA}{Style.BRIGHT}└───> {Style.RESET_ALL}").strip()
         try:
             if not token or not token.split(":")[0].isdigit():
-                raise Exception("Неправильный формат токена")
+                raise Exception("Неправильний формат токена")
             username = telebot.TeleBot(token).get_me().username
         except Exception as ex:
             s = ""
             if str(ex):
                 s = f" ({str(ex)})"
-            print(f"\n{Fore.CYAN}{Style.BRIGHT}Попробуй еще раз!{s} {Fore.RED}\(!!˚0˚)/{Style.RESET_ALL}")
+            print(f"\n{Fore.CYAN}{Style.BRIGHT}Спробуй ще раз!{s} {Fore.RED}\\(!!˚0˚)/{Style.RESET_ALL}")
             continue
         break
 
     while True:
         print(
-            f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}Придумай пароль (его потребует Telegram-бот). Пароль должен содержать более 8 символов, заглавные, строчные буквы и хотя бы одну цифру "
+            f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}Придумай пароль (його попросить Telegram-бот). Пароль має містити понад 8 символів, великі й малі літери та хоча б одну цифру "
             f" {Fore.RED}ᴖ̮ ̮ᴖ{Style.RESET_ALL}")
         password = input(f"{Fore.MAGENTA}{Style.BRIGHT}└───> {Style.RESET_ALL}").strip()
         if len(password) < 8 or password.lower() == password or password.upper() == password or not any(
                 [i.isdigit() for i in password]):
             print(
-                f"\n{Fore.CYAN}{Style.BRIGHT}Это плохой пароль. Попробуй еще раз! {Fore.RED}\(!!˚0˚)/{Style.RESET_ALL}")
+                f"\n{Fore.CYAN}{Style.BRIGHT}Це слабкий пароль. Спробуй ще раз! {Fore.RED}\\(!!˚0˚)/{Style.RESET_ALL}")
             continue
         break
 
@@ -256,9 +256,9 @@ def first_setup():
     config.set("Telegram", "secretKeyHash", hash_password(password))
 
     print(
-        f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}" f"Если хочешь использовать IPv4 прокси ДЛЯ ДОСТУПА К FUNPAY"
-        f" – укажи их в формате scheme://login:password@ip:port, login:password@ip:port или ip:port."
-        f" Если ты не знаешь, " f"что это такое или они тебе не нужны - просто нажми Enter. "
+        f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}" f"Якщо хочеш використовувати IPv4 проксі ДЛЯ ДОСТУПУ ДО FUNPAY"
+        f" – вкажи їх у форматі scheme://login:password@ip:port, login:password@ip:port або ip:port."
+        f" Якщо ти не знаєш, " f"що це таке або вони тобі не потрібні - просто натисни Enter. "
         f"{Fore.RED}(* ^ ω ^){Style.RESET_ALL}")
     proxy = input_proxy(set_telebot_proxy=True)
 
@@ -267,10 +267,10 @@ def first_setup():
         config.set("Proxy", "enable", "1")
         config.set("Proxy", "check", "1")
 
-    print(f"\n{Fore.CYAN}{Style.BRIGHT}Готово! Сейчас я сохраню конфиг и завершу программу! "
+    print(f"\n{Fore.CYAN}{Style.BRIGHT}Готово! Зараз я збережу конфіг і завершу програму! "
           f"{Fore.RED}ʘ>ʘ{Style.RESET_ALL}")
-    print(f"{Fore.CYAN}{Style.BRIGHT}Запусти меня снова и напиши своему Telegram-боту. "
-          f"Все остальное ты сможешь настроить через него. {Fore.RED}ʕ•ᴥ•ʔ{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}{Style.BRIGHT}Запусти мене знову і напиши своєму Telegram-боту. "
+          f"Усе інше ти зможеш налаштувати через нього. {Fore.RED}ʕ•ᴥ•ʔ{Style.RESET_ALL}")
     with open("configs/_main.cfg", "w", encoding="utf-8") as f:
         config.write(f)
     time.sleep(10)

@@ -18,7 +18,6 @@ gl_pcs = "шт."
 gl_last_update = "Останнє оновлення"
 
 # - Головне меню
-mm_language = "🗣️ Мова"
 mm_global = "⚙️ Глобальні перемикачі"
 mm_notifications = "🔔 Налаштування сповіщень"
 mm_autoresponse = "🤖 Налаштування автовідповіді"
@@ -230,7 +229,7 @@ create_test_ad_key = "Введи назву лота, авто-видачу як
 
 test_ad_key_created = """✅ Створений одноразовий ключ для видачі <code>{}</code>.\n
 Надішли команду знизу в чат з користувачем, якому хочеш видати товар.\n
-<code>!автовыдача {}</code>"""
+<code>!автовидача {}</code>"""
 
 about = """<b>FunPayCardinalRemake v{}</b>"""
 
@@ -329,13 +328,11 @@ profile_title = "Статистика облікового запису"
 profile_active_orders = "Незавершених замовлень"
 profile_balance = "Баланс"
 profile_uah_balance_line = "    <b>UAH:</b> <code>{} ₴</code> можна вивести <code>{} ₴</code>"
-profile_usd_balance_line = "    <b>$:</b> <code>{} $</code> можна вивести <code>{} $</code>"
-profile_eur_balance_line = "    <b>€:</b> <code>{} €</code> можна вивести <code>{} €</code>"
 profile_updated = "Оновлено"
 profile_withdraw_button = "Вивести гроші"
 withdraw_loading = "Завантажую збережені гаманці FunPay..."
 withdraw_choose_wallet = "Вибери гаманець для виводу. Показуються тільки гаманці, збережені на FunPay."
-withdraw_no_wallets = "❌ На FunPay не знайдено збережених гаманців для виводу RUB. Додай гаманець на сторінці https://funpay.com/account/wallets і спробуй ще раз."
+withdraw_no_wallets = "❌ На FunPay не знайдено збережених гаманців для виводу. Додай гаманець на сторінці https://funpay.com/account/wallets і спробуй ще раз."
 withdraw_wallets_error = "❌ Не вдалося отримати гаманці FunPay.\n\n<code>{}</code>"
 withdraw_session_expired = "Сесія виводу застаріла. Відкрий вивід заново."
 withdraw_enter_amount = "Гаманець: <code>{}</code>\n\nВведи суму виводу"
@@ -347,13 +344,13 @@ withdraw_2fa_required = "FunPay запросив код підтвердженн
 withdraw_failed = "❌ Не вдалося виконати вивід.\n\n<code>{}</code>"
 withdraw_success = "✅ Запит на вивід відправлено.\n\nСписано: <code>{} ₴</code>\nДо отримання: <code>{} ₴</code>\nВідправлено: <code>{}</code>"
 withdraw_cancelled = "Вивід скасовано."
-uah_rate_info = "Поточний курс: <code>1 USDT = {} UAH</code>\nКурс FunPay: <code>1 USDT = {} RUB</code>\n\nЩоб змінити UAH-курс, відправ:\n<code>/UAH 43.5</code>"
+uah_rate_info = "Поточний курс: <code>1 USDT = {} UAH</code>\nВнутрішній курс FunPay: <code>{}</code>\n\nЩоб змінити UAH-курс, відправ:\n<code>/UAH 43.5</code>"
 uah_rate_changed = "✅ Курс UAH змінено: <code>1 USDT = {} UAH</code>\n\nПокупки рахуються без комісії. Баланс у /profile рахується з комісією виводу 6%."
 uah_rate_error = "❌ Неправильний курс. Приклад: <code>/UAH 43.5</code>"
-usdt_rate_info = "Поточний курс FunPay: <code>1 USDT = {} RUB</code>\n\nЗмінити вручну:\n<code>/usdt 80.521</code>\n\nОновити з FunPay зараз:\n<code>/usdt auto</code>"
-usdt_rate_changed = "✅ Курс FunPay змінено: <code>1 USDT = {} RUB</code>"
+usdt_rate_info = "Поточний внутрішній курс FunPay: <code>{}</code>\n\nЗмінити вручну:\n<code>/usdt 80.521</code>\n\nОновити з FunPay зараз:\n<code>/usdt auto</code>"
+usdt_rate_changed = "✅ Внутрішній курс FunPay змінено: <code>{}</code>"
 usdt_rate_updating = "Оновлюю курс FunPay зі сторінки балансу..."
-usdt_rate_auto_changed = "✅ Курс FunPay оновлено з сайту: <code>1 USDT = {} RUB</code>"
+usdt_rate_auto_changed = "✅ Внутрішній курс FunPay оновлено з сайту: <code>{}</code>"
 usdt_rate_auto_error = "❌ Не вдалося оновити курс з FunPay. Залишив останній збережений курс."
 usdt_rate_error = "❌ Неправильний курс. Приклад: <code>/usdt 80.521</code>"
 
@@ -428,7 +425,6 @@ pl_new = "Відправ файл плагіна."
 au_user_settings = "Налаштування для користувача {}"
 # - Описи меню
 desc_main = "Вибери категорію налаштувань."
-desc_lang = desc_main
 desc_gs = "Тут ти можеш включати та вимикати основні функції <i>FPC</i>."
 desc_ns = """Тут ти можеш налаштувати сповіщення.\n
 <b><u>Налаштування роздільні для кожного <i>Telegram</i> чату!</u></b>\n
@@ -459,7 +455,6 @@ desc_proxy = "Тут ти можеш налаштувати проксі."
 
 # - Опис команд
 cmd_menu = "Налаштування"
-cmd_language = "змінити мову"
 cmd_profile = "Профіль"
 cmd_help = "Допомога"
 cmd_test_lot = "створити ключ видачі"
@@ -467,7 +462,7 @@ cmd_ban = "додати користувача до ЧС"
 cmd_unban = "видалити користувача з ЧС"
 cmd_black_list = "чорний список"
 cmd_logs = "завантажити поточний лог-файл"
-cmd_restart = "Restart"
+cmd_restart = "Перезапустити"
 cmd_old = "Список #"
 hidden_commands_help = """<b>Приховані команди:</b>
 

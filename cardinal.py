@@ -299,7 +299,7 @@ class Cardinal(object):
 
     def update_funpay_withdraw_rate(self, attempts: int = 2) -> bool:
         """
-        Обновляет сохраненный курс FunPay RUB -> USDT для отображения баланса в UAH.
+        Обновляет сохраненный внутренний курс FunPay для отображения баланса в UAH.
         """
         while attempts:
             try:
@@ -309,16 +309,16 @@ class Cardinal(object):
                 self.MAIN_CFG.set("DisplayCurrency", "funpayRubToUsdRate", currency.format_amount(rate))
                 self.MAIN_CFG.set("DisplayCurrency", "funpayRateUpdatedAt", str(int(time.time())))
                 self.save_config(self.MAIN_CFG, "configs/_main.cfg")
-                logger.info(f"Обновил курс FunPay: 1 USDT = {currency.format_amount(rate)} RUB.")
+                logger.info(f"Оновив внутрішній курс FunPay: {currency.format_amount(rate)}.")
                 return True
             except:
                 attempts -= 1
-                logger.warning("Не удалось обновить курс FunPay со страницы баланса.")
+                logger.warning("Не вдалося оновити курс FunPay зі сторінки балансу.")
                 logger.debug("TRACEBACK", exc_info=True)
                 if attempts:
                     time.sleep(2)
         logger.warning(
-            f"Использую сохраненный курс FunPay: 1 USDT = {currency.format_amount(currency.get_funpay_rub_to_usd_rate(self.MAIN_CFG))} RUB."
+            f"Використовую збережений внутрішній курс FunPay: {currency.format_amount(currency.get_funpay_rub_to_usd_rate(self.MAIN_CFG))}."
         )
         return False
 
@@ -354,8 +354,8 @@ class Cardinal(object):
                 raise_ok = True
                 last_time = self.raised_time.get(subcat.category.id)
                 self.raised_time[subcat.category.id] = new_time = int(time.time())  # locale
-                time_delta = "" if not last_time else f" Последнее поднятие: {cardinal_tools.time_to_str(new_time - last_time)} назад."
-                error_text = f"Подождите {cardinal_tools.time_to_str(wait_time)}."
+                time_delta = "" if not last_time else f" Останнє підняття: {cardinal_tools.time_to_str(new_time - last_time)} тому."
+                error_text = f"Зачекай {cardinal_tools.time_to_str(wait_time)}."
             except FunPayAPI.exceptions.RaiseError as e:
                 if e.error_message is not None:
                     error_text = e.error_message
@@ -395,7 +395,7 @@ class Cardinal(object):
         obj._order_attempt_made = True
         if type(obj) not in (types.Message, types.ChatShortcut, types.OrderShortcut):
             obj._order_attempt_error = True
-            raise Exception("Неправильный тип объекта")
+            raise Exception("Неправильний тип об'єкта")
         if not order_id:
             if isinstance(obj, types.OrderShortcut):
                 order_id = obj.id
@@ -411,10 +411,10 @@ class Cardinal(object):
         for i in range(2, -1, -1):
             try:
                 obj._order = self.account.get_order(order_id)
-                logger.info(f"Получил информацию о заказе {obj._order}")  # locale
+                logger.info(f"Отримав інформацію про замовлення {obj._order}")  # locale
                 return obj._order
             except:
-                logger.warning(f"Произошла ошибка при получении заказа #{order_id}. Осталось {i} попыток.")  # locale
+                logger.warning(f"Сталася помилка при отриманні замовлення #{order_id}. Залишилося спроб: {i}.")  # locale
                 logger.debug("TRACEBACK", exc_info=True)
                 time.sleep(1)
         obj._order_attempt_error = True
@@ -562,11 +562,11 @@ class Cardinal(object):
 
                 return result
             except:
-                logger.warning(f"Не удалось получить курс обмена. Осталось попыток: {i}")
+                logger.warning(f"Не вдалося отримати курс обміну. Залишилося спроб: {i}.")
                 logger.debug("TRACEBACK", exc_info=True)
                 time.sleep(1)
 
-        raise Exception("Не удалось получить курс обмена: превышено количество попыток.")
+        raise Exception("Не вдалося отримати курс обміну: перевищено кількість спроб.")
 
     def update_session(self, attempts: int = 3) -> bool:
         """
@@ -654,7 +654,7 @@ class Cardinal(object):
 
     def update_funpay_withdraw_rate_loop(self):
         """
-        Запускает цикл обновления курса FunPay RUB -> USDT.
+        Запускает цикл обновления внутреннего курса FunPay.
         """
         sleep_time = 21600
         while True:
@@ -684,7 +684,7 @@ class Cardinal(object):
             try:
                 self.telegram.setup_commands()
             except:
-                logger.warning("Произошла ошибка при установке команд.")
+                logger.warning("Сталася помилка при встановленні команд.")
                 logger.debug("TRACEBACK", exc_info=True)
 
             Thread(target=self.telegram.run, daemon=True).start()

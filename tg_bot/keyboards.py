@@ -64,24 +64,6 @@ def power_off(instance_id: int, state: int) -> K:
     return kb
 
 
-def language_settings(c: Cardinal) -> K:
-    lang = c.MAIN_CFG["Other"]["language"]
-    langs = {
-        "uk": "🇺🇦", "en": "🇺🇸", "ru": "🇷🇺"
-    }
-
-    kb = K()
-    lang_buttons = []
-
-    for i in langs:
-        cb = f"{CBT.LANG}:{i}" if lang != i else CBT.EMPTY
-        text = langs[i] if lang != i else f"⋅ {langs[i]} ⋅"
-        lang_buttons.append(B(text, callback_data=cb))
-    kb.row(*lang_buttons)
-    kb.add(B(_("gl_back"), None, CBT.MAIN))
-    return kb
-
-
 def main_settings(c: Cardinal) -> K:
     """
     Генерирует клавиатуру основных переключателей (CBT.CATEGORY:main).
