@@ -24,7 +24,7 @@ import logging
 
 from telebot.types import InlineKeyboardMarkup as K, InlineKeyboardButton as B, Message, CallbackQuery, BotCommand
 from tg_bot import utils, static_keyboards as skb, keyboards as kb, CBT
-from Utils import cardinal_tools, updater
+from Utils import cardinal_tools, currency, updater
 from locales.localizer import Localizer
 
 logger = logging.getLogger("TGBot")
@@ -383,6 +383,34 @@ class TGBot:
         self.bot.send_message(m.chat.id, utils.generate_profile_text(self.cardinal),
                               reply_markup=skb.REFRESH_BTN())
 
+    def change_uah_rate(self, m: Message):
+        """
+        Показывает или меняет курс отображения RUB -> UAH.
+        """
+        parts = m.text.split(maxsplit=1)
+        if len(parts) == 1:
+            rate = currency.get_rub_to_uah_rate(self.cardinal.MAIN_CFG)
+            self.bot.send_message(m.chat.id, _("uah_rate_info", currency.format_amount(rate)))
+            return
+
+        raw_rate = parts[1].strip().replace(",", ".")
+        try:
+            rate = float(raw_rate)
+        except ValueError:
+            self.bot.send_message(m.chat.id, _("uah_rate_error"))
+            return
+
+        if rate <= 0:
+            self.bot.send_message(m.chat.id, _("uah_rate_error"))
+            return
+
+        if not self.cardinal.MAIN_CFG.has_section("DisplayCurrency"):
+            self.cardinal.MAIN_CFG.add_section("DisplayCurrency")
+        self.cardinal.MAIN_CFG.set("DisplayCurrency", "currency", "UAH")
+        self.cardinal.MAIN_CFG.set("DisplayCurrency", "rubToUahRate", currency.format_amount(rate))
+        self.cardinal.save_config(self.cardinal.MAIN_CFG, "configs/_main.cfg")
+        self.bot.send_message(m.chat.id, _("uah_rate_changed", currency.format_amount(rate)))
+
     def act_change_cookie(self, m: Message):
         """
         Активирует режим ввода golden_key.
@@ -739,8 +767,8 @@ class TGBot:
 
     def act_edit_order_confirm_reply_text(self, c: CallbackQuery):
         variables = ["v_date", "v_date_text", "v_full_date_text", "v_time", "v_full_time", "v_username",
-                     "v_order_id", "v_order_link", "v_order_title", "v_game", "v_category", "v_category_fullname",
-                     "v_photo", "v_sleep"]
+                     "v_order_id", "v_order_link", "v_order_title", "v_order_price", "v_game", "v_category",
+                     "v_category_fullname", "v_photo", "v_sleep"]
         text = f"{_('v_edit_order_confirm_text')}\n\n{_('v_list')}:\n" + "\n".join(_(i) for i in variables)
         result = self.bot.send_message(c.message.chat.id, text, reply_markup=skb.CLEAR_STATE_BTN())
         self.set_state(c.message.chat.id, result.id, c.from_user.id, CBT.EDIT_ORDER_CONFIRM_REPLY_TEXT)
@@ -759,7 +787,7 @@ class TGBot:
     def act_edit_review_reply_text(self, c: CallbackQuery):
         stars = int(c.data.split(":")[1])
         variables = ["v_date", "v_date_text", "v_full_date_text", "v_time", "v_full_time", "v_username",
-                     "v_order_id", "v_order_link", "v_order_title", "v_order_params",
+                     "v_order_id", "v_order_link", "v_order_title", "v_order_price", "v_order_params",
                      "v_order_desc_and_params", "v_order_desc_or_params", "v_game", "v_category", "v_category_fullname"]
         text = f"{_('v_edit_review_reply_text', '⭐' * stars)}\n\n{_('v_list')}:\n" + "\n".join(_(i) for i in variables)
         result = self.bot.send_message(c.message.chat.id, text, reply_markup=skb.CLEAR_STATE_BTN())
@@ -1072,6 +1100,7 @@ class TGBot:
 
         self.msg_handler(self.send_settings_menu, commands=["menu", "start"])
         self.msg_handler(self.send_profile, commands=["profile"])
+        self.msg_handler(self.change_uah_rate, commands=["UAH", "uah"])
         self.msg_handler(self.act_change_cookie, commands=["gkey"])
         self.msg_handler(self.change_cookie, func=lambda m: self.check_state(m.chat.id, m.from_user.id,
                                                                              CBT.CHANGE_GOLDEN_KEY))

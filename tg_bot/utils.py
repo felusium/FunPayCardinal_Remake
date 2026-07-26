@@ -17,6 +17,7 @@ import os.path
 import json
 import time
 import Utils.cardinal_tools
+from Utils import currency
 from tg_bot import CBT
 
 
@@ -244,13 +245,15 @@ def generate_profile_text(cardinal: Cardinal) -> str:
     """
     account = cardinal.account  # locale
     balance = cardinal.balance
+    rub_total = currency.format_rub_as_display(balance.total_rub, cardinal.MAIN_CFG)
+    rub_available = currency.format_rub_as_display(balance.available_rub, cardinal.MAIN_CFG)
     return f"""Статистика аккаунта
 
 <b>Незавершенных заказов:</b> <code>{account.active_sales}</code>
 <b>Баланс:</b> 
-    <b>₽:</b> <code>{balance.total_rub}₽</code>, доступно для вывода <code>{balance.available_rub}₽</code>.
-    <b>$:</b> <code>{balance.total_usd}$</code>, доступно для вывода <code>{balance.available_usd}$</code>.
-    <b>€:</b> <code>{balance.total_eur}€</code>, доступно для вывода <code>{balance.available_eur}€</code>.
+    <b>UAH:</b> <code>{rub_total}</code>, доступно для вывода <code>{rub_available}</code>.
+    <b>$:</b> <code>{currency.format_amount(balance.total_usd)} $</code>, доступно для вывода <code>{currency.format_amount(balance.available_usd)} $</code>.
+    <b>€:</b> <code>{currency.format_amount(balance.total_eur)} €</code>, доступно для вывода <code>{currency.format_amount(balance.available_eur)} €</code>.
 
 <i>Обновлено:</i>  <code>{time.strftime('%H:%M:%S', time.localtime(account.last_update))}</code>"""
 

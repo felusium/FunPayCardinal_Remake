@@ -139,6 +139,11 @@ def load_main_config(config_path: str):
             "check": ["0", "1"]
         },
 
+        "DisplayCurrency": {
+            "currency": ["RUB", "UAH"],
+            "rubToUahRate": "any"
+        },
+
         "Other": {
             "requestsDelay": [str(i) for i in range(1, 101)],
             "language": ["ru", "en", "uk"]
@@ -146,6 +151,13 @@ def load_main_config(config_path: str):
     }
 
     for section_name in values:
+        if section_name == "DisplayCurrency" and section_name not in config.sections():
+            config.add_section("DisplayCurrency")
+            config.set("DisplayCurrency", "currency", "UAH")
+            config.set("DisplayCurrency", "rubToUahRate", "0.58")
+            with open("configs/_main.cfg", "w", encoding="utf-8") as f:
+                config.write(f)
+
         if section_name not in config.sections():
             raise ConfigParseError(config_path, section_name, SectionNotFoundError())
 
@@ -227,6 +239,16 @@ def load_main_config(config_path: str):
                     config.write(f)
             elif section_name == "Telegram" and param_name == "proxy" and param_name not in config[section_name]:
                 config.set("Telegram", "proxy", "")
+                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
+                    config.write(f)
+            elif section_name == "DisplayCurrency" and param_name == "currency" and \
+                    param_name not in config[section_name]:
+                config.set("DisplayCurrency", "currency", "UAH")
+                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
+                    config.write(f)
+            elif section_name == "DisplayCurrency" and param_name == "rubToUahRate" and \
+                    param_name not in config[section_name]:
+                config.set("DisplayCurrency", "rubToUahRate", "0.58")
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)
 

@@ -14,7 +14,7 @@ from FunPayAPI import exceptions, utils as fp_utils
 from FunPayAPI.updater.events import *
 
 from tg_bot import utils, keyboards
-from Utils import cardinal_tools
+from Utils import cardinal_tools, currency
 from locales.localizer import Localizer
 from threading import Thread
 import configparser
@@ -569,8 +569,9 @@ def send_new_order_notification_handler(c: Cardinal, e: NewOrderEvent, *args):
     )
 
     delivery_info = f"\n\n<i>{_('ntfc_new_order_will_be_delivered')}</i>" if will_be_delivered else ""
+    price = currency.format_money(e.order.price, e.order.currency, c.MAIN_CFG)
     text = _("ntfc_new_order", f"{utils.escape(e.order.description)}, {utils.escape(e.order.subcategory_name)}",
-             e.order.buyer_username, f"{e.order.price} {e.order.currency}".strip(), e.order.id, delivery_info)
+             e.order.buyer_username, price, e.order.id, delivery_info)
 
     chat = c.account.get_chat_by_name(e.order.buyer_username)
     if chat:
@@ -858,10 +859,11 @@ def send_order_confirmed_notification_handler(cardinal: Cardinal, event: OrderSt
         chat_id = chat.id
     else:
         chat_id = event.order.chat_id
+    price = currency.format_money(event.order.price, event.order.currency, cardinal.MAIN_CFG)
     Thread(target=cardinal.telegram.send_notification,  # locale
            args=(
                f"""🪙 Пользователь <a href="https://funpay.com/chat/?node={chat_id}">{event.order.buyer_username}</a> """
-               f"""подтвердил выполнение заказа <code>{event.order.id}</code>. (<code>{f'{event.order.price} {event.order.currency}'.strip()}</code>)""",
+               f"""подтвердил выполнение заказа <code>{event.order.id}</code>. (<code>{price}</code>)""",
                keyboards.new_order(event.order.id, event.order.buyer_username, chat_id),
                utils.NotificationTypes.order_confirmed),
            daemon=True).start()
@@ -874,7 +876,7 @@ def send_bot_started_notification_handler(c: Cardinal, *args):
     if c.telegram is None:
         return
     text = _("fpc_init", c.VERSION, c.account.username, c.account.id,
-             c.balance.total_rub, c.balance.total_usd, c.balance.total_eur, c.account.active_sales)
+             currency.format_balance_short(c.balance, c.MAIN_CFG), c.account.active_sales)
     for i in c.telegram.init_messages:
         try:
             c.telegram.bot.edit_message_text(text, i[0], i[1])

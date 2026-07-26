@@ -82,6 +82,11 @@ default_config = {
         "check": "0"
     },
 
+    "DisplayCurrency": {
+        "currency": "UAH",
+        "rubToUahRate": "0.58"
+    },
+
     "Other": {
         "requestsDelay": "4",
         "language": "ru"

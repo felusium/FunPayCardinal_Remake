@@ -221,7 +221,7 @@ bot_started = """✅ Telegram-бот запущен!\n
 fpc_init = """✅ <b><u>FunPayCardinalRemake инициализирован!</u></b>\n
 ℹ️ <b><i>Версия:</i></b> <code>{}</code>
 👑 <b><i>Аккаунт:</i></b>  <code>{}</code> | <code>{}</code>
-💰 <b><i>Баланс:</i></b> <code>{}₽, {}$, {}€</code>
+💰 <b><i>Баланс:</i></b> <code>{}</code>
 📊 <b><i>Активные заказы:</i></b>  <code>{}</code>
 
 """
@@ -325,6 +325,9 @@ refund_complete = "✅ Средства по заказу <code>#{}</code> во�
 
 updating_profile = "Обновляю статистику аккаунта (это может занять некоторое время)..."
 profile_updating_error = "❌ Не удалось обновить статистику аккаунта."
+uah_rate_info = "Текущий курс: <code>1 RUB = {} UAH</code>\n\nЧтобы изменить курс, отправь:\n<code>/UAH 0.505</code>"
+uah_rate_changed = "✅ Курс UAH изменен: <code>1 RUB = {} UAH</code>\n\nТеперь рублевые суммы будут отображаться в гривнах по этому курсу."
+uah_rate_error = "❌ Неверный курс. Пример: <code>/UAH 0.505</code>"
 
 act_change_golden_key = "Введите golden_key"
 cookie_changed = "✅ golden_key успешно изменен{}.\n"
@@ -443,6 +446,7 @@ hidden_commands_help = """<b>Скрытые команды:</b>
 /logs - загрузить текущий лог-файл
 /del_logs - удалить старые лог-файлы
 /gkey - изменить golden_key
+/UAH 0.505 - изменить курс UAH
 /update - обновить версию
 /ban - добавить пользователя в ЧС
 /unban - удалить пользователя из ЧС
@@ -472,6 +476,7 @@ v_order_id = "<code>$order_id</code> - ID заказа (без #)"
 v_order_link = "<code>$order_link</code> - ссылка на заказ"
 v_order_title = "<code>$order_title</code> - название заказа."
 v_order_params = "<code>$order_params</code> - параметры заказа."
+v_order_price = "<code>$order_price</code> - сумма заказа."
 v_order_desc_and_params = "<code>$order_desc_and_params</code> - название заказа и/или параметры."
 v_order_desc_or_params = "<code>$order_desc_or_params</code> - название заказа или параметры."
 v_game = "<code>$game</code> - название игры."

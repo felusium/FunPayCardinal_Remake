@@ -13,6 +13,7 @@ import FunPayAPI.types
 
 from datetime import datetime
 import Utils.exceptions
+from Utils import currency
 import itertools
 import psutil
 import json
@@ -288,7 +289,7 @@ def create_greeting_text(cardinal: Cardinal):
     lines = [
         f"* {greetings}, $CYAN{account.username}.",
         f"* Ваш ID: $YELLOW{account.id}.",
-        f"* Ваш текущий баланс: $CYAN{balance.total_rub} RUB $RESET| $MAGENTA{balance.total_usd} USD $RESET| $YELLOW{balance.total_eur} EUR",
+        f"* Ваш текущий баланс: $CYAN{currency.format_rub_as_display(balance.total_rub, cardinal.MAIN_CFG)} $RESET| $MAGENTA{currency.format_amount(balance.total_usd)} USD $RESET| $YELLOW{currency.format_amount(balance.total_eur)} EUR",
         f"* Текущие незавершенные сделки: $YELLOW{account.active_sales}.",
         f"* Удачной торговли!"
     ]
@@ -486,6 +487,7 @@ def format_order_text(text: str, order: FunPayAPI.types.OrderShortcut | FunPayAP
         "$order_desc": description,
         "$order_title": description,
         "$order_params": params,
+        "$order_price": currency.format_money(order.price, order.currency),
         "$order_id": order.id,
         "$order_link": f"https://funpay.com/orders/{order.id}/",
         "$category_fullname": subcategory_fullname,
