@@ -184,7 +184,7 @@ def authorized_users(c: Cardinal, offset: int):
     return kb
 
 
-def authorized_user_settings(c: Cardinal, user_id: int, offset: int, user_link: bool):
+def authorized_user_settings(c: Cardinal, user_id: int, offset: int, user_link: bool, ask_to_delete: bool = False):
     """
     Генерирует клавиатуру с настройками пользователя (CBT.AUTHORIZED_USER_SETTINGS:<offset>).
     """
@@ -192,8 +192,11 @@ def authorized_user_settings(c: Cardinal, user_id: int, offset: int, user_link: 
 
     if user_link:
         kb.add(B(f"{user_id}", url=f"tg:user?id={user_id}"))
-    for i in range(1, 7):
-        kb.add(B(f"Настроечки {i}", callback_data=CBT.EMPTY))
+    if not ask_to_delete:
+        kb.add(B(_("au_delete_user"), None, f"{CBT.DELETE_AUTHORIZED_USER}:{user_id}:{offset}"))
+    else:
+        kb.row(B(_("gl_yes"), None, f"{CBT.CONFIRM_DELETE_AUTHORIZED_USER}:{user_id}:{offset}"),
+               B(_("gl_no"), None, f"{CBT.AUTHORIZED_USER_SETTINGS}:{user_id}:{offset}"))
     kb.add(B(_("gl_back"), None, f"{CBT.AUTHORIZED_USERS}:{offset}"))
     # todo в коллбеки кнопок добавить offset и user_link
     return kb

@@ -154,6 +154,7 @@ class Cardinal(object):
         self.last_greeting_chat_id_threshold_change_tag: str | None = None
         self.greeting_threshold_chat_ids = set()  # ID чатов для последующего обновления  self.greeting_chat_id_threshold
         self.blacklist = cardinal_tools.load_blacklist()  # ЧС.
+        self.trash_filters = cardinal_tools.load_trash_filters()  # Фильтр мусорных Telegram-уведомлений.
         self.old_users = cardinal_tools.load_old_users(
             float(self.MAIN_CFG["Greetings"]["greetingsCooldown"]))  # Уже написавшие пользователи.
         self.greeting_chat_id_threshold = max(self.old_users.keys(), default=0)

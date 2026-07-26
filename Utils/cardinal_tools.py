@@ -79,6 +79,55 @@ def load_blacklist() -> list[str]:
         return blacklist
 
 
+def normalize_trash_filter_text(text: str) -> str:
+    return " ".join(str(text).casefold().split())
+
+
+def cache_trash_filters(filters: list[str]) -> None:
+    if not os.path.exists("storage/cache"):
+        os.makedirs("storage/cache")
+
+    clean_filters = []
+    seen = set()
+    for item in filters:
+        item = str(item).strip()
+        normalized = normalize_trash_filter_text(item)
+        if not normalized or normalized in seen:
+            continue
+        clean_filters.append(item)
+        seen.add(normalized)
+
+    with open("storage/cache/trash_filters.json", "w", encoding="utf-8") as f:
+        f.write(json.dumps(clean_filters, ensure_ascii=False, indent=4))
+
+
+def load_trash_filters() -> list[str]:
+    if not os.path.exists("storage/cache/trash_filters.json"):
+        return []
+
+    with open("storage/cache/trash_filters.json", "r", encoding="utf-8") as f:
+        try:
+            filters = json.loads(f.read())
+        except json.decoder.JSONDecodeError:
+            return []
+
+    if not isinstance(filters, list):
+        return []
+    return [str(item).strip() for item in filters if str(item).strip()]
+
+
+def find_trash_filter(text: str, filters: list[str] | None = None) -> str | None:
+    normalized_text = normalize_trash_filter_text(text)
+    if not normalized_text:
+        return None
+
+    for item in filters if filters is not None else load_trash_filters():
+        normalized_item = normalize_trash_filter_text(item)
+        if normalized_item and normalized_item in normalized_text:
+            return item
+    return None
+
+
 def check_proxy(proxy: dict) -> bool:
     """
     Проверяет работоспособность прокси.

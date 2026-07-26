@@ -718,3 +718,15 @@ WITHDRAW_AMOUNT = "78"
 """
 User-state: ожидается сумма ручного вывода.
 """
+
+DELETE_AUTHORIZED_USER = "79"
+"""
+Callback для запроса удаления авторизованного пользователя.
+Использование: CBT.DELETE_AUTHORIZED_USER:user_id:offset
+"""
+
+CONFIRM_DELETE_AUTHORIZED_USER = "80"
+"""
+Callback для удаления авторизованного пользователя.
+Использование: CBT.CONFIRM_DELETE_AUTHORIZED_USER:user_id:offset
+"""

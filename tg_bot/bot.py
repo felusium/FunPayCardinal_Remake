@@ -386,6 +386,74 @@ class TGBot:
         self.bot.send_message(m.chat.id, utils.generate_profile_text(self.cardinal),
                               reply_markup=skb.REFRESH_BTN())
 
+    def manage_trash_filters(self, m: Message):
+        """
+        Управляет фильтром мусорных FunPay-уведомлений.
+        """
+        parts = m.text.split(maxsplit=1)
+        if len(parts) == 1:
+            self.send_trash_filters(m)
+            return
+
+        payload = parts[1].strip()
+        action = payload.casefold()
+        if action in ("list", "список", "show", "показать"):
+            self.send_trash_filters(m)
+            return
+
+        if action in ("clear", "очистить"):
+            self.cardinal.trash_filters = []
+            cardinal_tools.cache_trash_filters(self.cardinal.trash_filters)
+            self.bot.send_message(m.chat.id, "✅ Фильтр мусорных уведомлений очищен.")
+            return
+
+        for prefix in ("del ", "delete ", "remove ", "удалить "):
+            if action.startswith(prefix):
+                raw_index = payload[len(prefix):].strip()
+                try:
+                    index = int(raw_index) - 1
+                except ValueError:
+                    self.bot.send_message(m.chat.id, "❌ Укажи номер правила. Например: <code>/trash del 2</code>")
+                    return
+
+                if index < 0 or index >= len(self.cardinal.trash_filters):
+                    self.bot.send_message(m.chat.id, "❌ Правила с таким номером нет.")
+                    return
+
+                removed = self.cardinal.trash_filters.pop(index)
+                cardinal_tools.cache_trash_filters(self.cardinal.trash_filters)
+                self.bot.send_message(m.chat.id, f"✅ Удалено правило:\n<code>{utils.escape(removed)}</code>")
+                return
+
+        if len(cardinal_tools.normalize_trash_filter_text(payload)) < 3:
+            self.bot.send_message(m.chat.id, "❌ Текст фильтра слишком короткий.")
+            return
+
+        if cardinal_tools.find_trash_filter(payload, self.cardinal.trash_filters):
+            self.bot.send_message(m.chat.id, "ℹ️ Такое правило уже есть в фильтре.")
+            return
+
+        self.cardinal.trash_filters.append(payload)
+        cardinal_tools.cache_trash_filters(self.cardinal.trash_filters)
+        self.bot.send_message(m.chat.id,
+                              f"✅ Добавил в фильтр мусорных уведомлений:\n<code>{utils.escape(payload)}</code>")
+
+    def send_trash_filters(self, m: Message):
+        if not self.cardinal.trash_filters:
+            text = "<b>Фильтр мусорных уведомлений пуст.</b>"
+        else:
+            rows = []
+            for index, item in enumerate(self.cardinal.trash_filters, start=1):
+                rows.append(f"{index}. <code>{utils.escape(item)}</code>")
+            text = "<b>Фильтр мусорных уведомлений:</b>\n\n" + "\n".join(rows)
+
+        text += ("\n\n<b>Команды:</b>\n"
+                 "<code>/trash текст</code> - добавить текст в фильтр\n"
+                 "<code>/trash list</code> - показать список\n"
+                 "<code>/trash del 1</code> - удалить правило по номеру\n"
+                 "<code>/trash clear</code> - очистить список")
+        self.bot.send_message(m.chat.id, text)
+
     def change_uah_rate(self, m: Message):
         """
         Показывает или меняет курс отображения UAH.
@@ -1367,6 +1435,7 @@ class TGBot:
 
         self.msg_handler(self.send_settings_menu, commands=["menu", "start"])
         self.msg_handler(self.send_profile, commands=["profile"])
+        self.msg_handler(self.manage_trash_filters, commands=["trash"])
         self.msg_handler(self.change_uah_rate, commands=["UAH", "uah"])
         self.msg_handler(self.change_usdt_rate, commands=["usdt", "USDT"])
         self.msg_handler(self.act_change_cookie, commands=["gkey"])

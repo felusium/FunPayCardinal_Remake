@@ -214,6 +214,8 @@ def old_send_new_msg_notification_handler(c: Cardinal, e: LastChatMessageChanged
             e.chat.last_message_type is not MessageTypes.NON_SYSTEM, str(e.chat).strip().lower() in c.AR_CFG.sections(),
             str(e.chat).startswith(("!автовидача", "!автовыдача"))]):
         return
+    if cardinal_tools.find_trash_filter(str(e.chat), c.trash_filters):
+        return
     user = e.chat.name
     if user in c.blacklist:
         user = f"🚷 {user}"
@@ -243,6 +245,8 @@ def send_new_msg_notification_handler(c: Cardinal, e: NewMessageEvent) -> None:
     events = []
     nm, m, f, b = False, False, False, False
     for i in e.stack.get_stack():
+        if cardinal_tools.find_trash_filter(str(i.message), c.trash_filters):
+            continue
         if i.message.author_id == 0:
             if c.include_fp_msg_enabled:
                 events.append(i)
@@ -271,7 +275,7 @@ def send_new_msg_notification_handler(c: Cardinal, e: NewMessageEvent) -> None:
     last_badge = None
     last_by_vertex = False
     for i in events:
-        message_text = str(e.message)
+        message_text = str(i.message)
         if message_text.strip().lower() in c.AR_CFG.sections() and len(events) < 2:
             return
         elif message_text.startswith(("!автовидача", "!автовыдача")) and len(events) < 2:
@@ -314,6 +318,8 @@ def send_new_msg_notification_handler(c: Cardinal, e: NewMessageEvent) -> None:
 
 def send_review_notification(c: Cardinal, order: Order, chat_id: int, reply_text: str | None):
     if not c.telegram:
+        return
+    if order.review and order.review.stars and order.review.stars >= 4:
         return
     reply_text = _("ntfc_review_reply_text").format(utils.escape(reply_text)) if reply_text else ""
     Thread(target=c.telegram.send_notification,
@@ -408,6 +414,8 @@ def send_command_notification_handler(c: Cardinal, e: NewMessageEvent | LastChat
         chat_id, chat_name, username = obj.id, obj.name, obj.name if obj.unread else c.account.username
 
     if c.bl_cmd_notification_enabled and username in c.blacklist:
+        return
+    if cardinal_tools.find_trash_filter(message_text, c.trash_filters):
         return
     command = message_text.strip().lower()
     if (command not in c.AR_CFG or not c.AR_CFG[command].getboolean("telegramNotification")
