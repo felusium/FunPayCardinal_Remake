@@ -84,7 +84,10 @@ default_config = {
 
     "DisplayCurrency": {
         "currency": "UAH",
-        "rubToUahRate": "0.58"
+        "uahRate": "43.5",
+        "funpayRubToUsdRate": "80.521",
+        "funpayRateUpdatedAt": "0",
+        "withdrawCommissionPercent": "6"
     },
 
     "Other": {

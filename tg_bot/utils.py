@@ -245,13 +245,13 @@ def generate_profile_text(cardinal: Cardinal) -> str:
     """
     account = cardinal.account  # locale
     balance = cardinal.balance
-    rub_total = currency.format_rub_as_display(balance.total_rub, cardinal.MAIN_CFG)
-    rub_available = currency.format_rub_as_display(balance.available_rub, cardinal.MAIN_CFG)
+    rub_total = currency.format_rub_as_display(balance.total_rub, cardinal.MAIN_CFG, True)
+    rub_available = currency.format_rub_as_display(balance.available_rub, cardinal.MAIN_CFG, True)
     return f"""Статистика аккаунта
 
 <b>Незавершенных заказов:</b> <code>{account.active_sales}</code>
 <b>Баланс:</b> 
-    <b>UAH:</b> <code>{rub_total}</code>, доступно для вывода <code>{rub_available}</code>.
+    <b>UAH:</b> <code>{rub_total}</code>, доступно для вывода <code>{rub_available}</code> с учетом комиссии.
     <b>$:</b> <code>{currency.format_amount(balance.total_usd)} $</code>, доступно для вывода <code>{currency.format_amount(balance.available_usd)} $</code>.
     <b>€:</b> <code>{currency.format_amount(balance.total_eur)} €</code>, доступно для вывода <code>{currency.format_amount(balance.available_eur)} €</code>.
 

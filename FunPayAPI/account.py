@@ -632,6 +632,33 @@ class Account:
                                 float(balances["data-balance-total-eur"]), float(balances["data-balance-eur"]))
         return balance
 
+    def get_usdt_withdraw_rate(self) -> float:
+        """
+        Получает курс вывода RUB -> USDT со страницы баланса.
+
+        :return: курс RUB за 1 USDT.
+        :rtype: :obj:`float`
+        """
+        if not self.is_initiated:
+            raise exceptions.AccountNotInitiatedError()
+
+        response = self.method("get", "account/balance", {"accept": "*/*"}, {}, raise_not_200=True)
+        parser = BeautifulSoup(response.content.decode(), "lxml")
+        self.__update_csrf_token(parser)
+
+        text = parser.get_text("\n", strip=True)
+        patterns = (
+            r"USDT\s*TRC20[\s\S]{0,300}?(?:курс|rate)\s*([\d.,]+)",
+            r"(?:курс|rate)\s*([\d.,]+)",
+        )
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if not match:
+                continue
+            return float(match.group(1).replace(",", "."))
+
+        raise Exception("Не удалось найти курс USDT TRC20 на странице баланса.")
+
     def get_chat_history(self, chat_id: int | str, last_message_id: int | None = None,
                          interlocutor_username: Optional[str] = None, from_id: int = 0) -> list[types.Message]:
         """

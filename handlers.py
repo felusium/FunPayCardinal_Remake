@@ -381,7 +381,7 @@ def process_review_handler(c: Cardinal, e: NewMessageEvent | LastChatMessageChan
                         text_ = text_[::-1].replace("\n", " ", text_.count("\n") - 9)[::-1]
                     return text_
 
-                reply_text = cardinal_tools.format_order_text(c.MAIN_CFG["ReviewReply"].get(text), order)
+                reply_text = cardinal_tools.format_order_text(c.MAIN_CFG["ReviewReply"].get(text), order, c.MAIN_CFG)
                 reply_text = format_text4review(reply_text)
                 c.account.send_review(order.id, reply_text)
             except:
@@ -590,7 +590,7 @@ def deliver_goods(c: Cardinal, e: NewOrderEvent, *args):
     else:
         chat_id = e.order.chat_id
     cfg_obj = getattr(e, "config_section_obj")
-    delivery_text = cardinal_tools.format_order_text(cfg_obj["response"], e.order)
+    delivery_text = cardinal_tools.format_order_text(cfg_obj["response"], e.order, c.MAIN_CFG)
 
     amount, goods_left, products = 1, -1, []
     try:
@@ -833,7 +833,8 @@ def send_thank_u_message_handler(cardinal: Cardinal, event: OrderStatusChangedEv
     if not cardinal.MAIN_CFG["OrderConfirm"].getboolean("sendReply") or event.order.status is not types.OrderStatuses.CLOSED:
         return
 
-    text = cardinal_tools.format_order_text(cardinal.MAIN_CFG["OrderConfirm"]["replyText"], event.order)
+    text = cardinal_tools.format_order_text(cardinal.MAIN_CFG["OrderConfirm"]["replyText"], event.order,
+                                            cardinal.MAIN_CFG)
     chat = cardinal.account.get_chat_by_name(event.order.buyer_username)
     if chat:
         chat_id = chat.id

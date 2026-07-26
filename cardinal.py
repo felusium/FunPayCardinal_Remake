@@ -28,7 +28,7 @@ import FunPayAPI
 import handlers
 from locales.localizer import Localizer
 from FunPayAPI import utils as fp_utils
-from Utils import cardinal_tools
+from Utils import cardinal_tools, currency
 import tg_bot.bot
 
 from threading import Thread
@@ -215,6 +215,7 @@ class Cardinal(object):
             try:
                 self.account.get()
                 self.balance = self.get_balance()
+                self.update_funpay_withdraw_rate()
                 greeting_text = cardinal_tools.create_greeting_text(self)
                 cardinal_tools.set_console_title(f"FunPayCardinalRemake - {self.account.username} ({self.account.id})")
                 for line in greeting_text.split("\n"):
@@ -295,6 +296,31 @@ class Cardinal(object):
             raise Exception(...)
         balance = self.account.get_balance(random.choice(lots).id)
         return balance
+
+    def update_funpay_withdraw_rate(self, attempts: int = 2) -> bool:
+        """
+        Обновляет сохраненный курс FunPay RUB -> USDT для отображения баланса в UAH.
+        """
+        while attempts:
+            try:
+                rate = self.account.get_usdt_withdraw_rate()
+                if not self.MAIN_CFG.has_section("DisplayCurrency"):
+                    self.MAIN_CFG.add_section("DisplayCurrency")
+                self.MAIN_CFG.set("DisplayCurrency", "funpayRubToUsdRate", currency.format_amount(rate))
+                self.MAIN_CFG.set("DisplayCurrency", "funpayRateUpdatedAt", str(int(time.time())))
+                self.save_config(self.MAIN_CFG, "configs/_main.cfg")
+                logger.info(f"Обновил курс FunPay: 1 USDT = {currency.format_amount(rate)} RUB.")
+                return True
+            except:
+                attempts -= 1
+                logger.warning("Не удалось обновить курс FunPay со страницы баланса.")
+                logger.debug("TRACEBACK", exc_info=True)
+                if attempts:
+                    time.sleep(2)
+        logger.warning(
+            f"Использую сохраненный курс FunPay: 1 USDT = {currency.format_amount(currency.get_funpay_rub_to_usd_rate(self.MAIN_CFG))} RUB."
+        )
+        return False
 
     # Прочее
     def raise_lots(self) -> int:
@@ -626,6 +652,16 @@ class Cardinal(object):
             result = self.update_session()
             sleep_time = 60 if not result else 3600
 
+    def update_funpay_withdraw_rate_loop(self):
+        """
+        Запускает цикл обновления курса FunPay RUB -> USDT.
+        """
+        sleep_time = 21600
+        while True:
+            time.sleep(sleep_time)
+            result = self.update_funpay_withdraw_rate()
+            sleep_time = 21600 if result else 600
+
     # Управление процессом
     def init(self):
         """
@@ -671,6 +707,7 @@ class Cardinal(object):
 
         Thread(target=self.lots_raise_loop, daemon=True).start()
         Thread(target=self.update_session_loop, daemon=True).start()
+        Thread(target=self.update_funpay_withdraw_rate_loop, daemon=True).start()
         self.process_events()
 
     def start(self):

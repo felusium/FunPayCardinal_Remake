@@ -141,7 +141,10 @@ def load_main_config(config_path: str):
 
         "DisplayCurrency": {
             "currency": ["RUB", "UAH"],
-            "rubToUahRate": "any"
+            "uahRate": "any",
+            "funpayRubToUsdRate": "any",
+            "funpayRateUpdatedAt": "any",
+            "withdrawCommissionPercent": "any"
         },
 
         "Other": {
@@ -154,7 +157,10 @@ def load_main_config(config_path: str):
         if section_name == "DisplayCurrency" and section_name not in config.sections():
             config.add_section("DisplayCurrency")
             config.set("DisplayCurrency", "currency", "UAH")
-            config.set("DisplayCurrency", "rubToUahRate", "0.58")
+            config.set("DisplayCurrency", "uahRate", "43.5")
+            config.set("DisplayCurrency", "funpayRubToUsdRate", "80.521")
+            config.set("DisplayCurrency", "funpayRateUpdatedAt", "0")
+            config.set("DisplayCurrency", "withdrawCommissionPercent", "6")
             with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                 config.write(f)
 
@@ -246,9 +252,24 @@ def load_main_config(config_path: str):
                 config.set("DisplayCurrency", "currency", "UAH")
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)
-            elif section_name == "DisplayCurrency" and param_name == "rubToUahRate" and \
+            elif section_name == "DisplayCurrency" and param_name == "uahRate" and \
                     param_name not in config[section_name]:
-                config.set("DisplayCurrency", "rubToUahRate", "0.58")
+                config.set("DisplayCurrency", "uahRate", "43.5")
+                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
+                    config.write(f)
+            elif section_name == "DisplayCurrency" and param_name == "funpayRubToUsdRate" and \
+                    param_name not in config[section_name]:
+                config.set("DisplayCurrency", "funpayRubToUsdRate", "80.521")
+                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
+                    config.write(f)
+            elif section_name == "DisplayCurrency" and param_name == "funpayRateUpdatedAt" and \
+                    param_name not in config[section_name]:
+                config.set("DisplayCurrency", "funpayRateUpdatedAt", "0")
+                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
+                    config.write(f)
+            elif section_name == "DisplayCurrency" and param_name == "withdrawCommissionPercent" and \
+                    param_name not in config[section_name]:
+                config.set("DisplayCurrency", "withdrawCommissionPercent", "6")
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)
 

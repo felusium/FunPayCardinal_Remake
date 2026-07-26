@@ -389,8 +389,10 @@ class TGBot:
         """
         parts = m.text.split(maxsplit=1)
         if len(parts) == 1:
-            rate = currency.get_rub_to_uah_rate(self.cardinal.MAIN_CFG)
-            self.bot.send_message(m.chat.id, _("uah_rate_info", currency.format_amount(rate)))
+            uah_rate = currency.get_uah_rate(self.cardinal.MAIN_CFG)
+            funpay_rate = currency.get_funpay_rub_to_usd_rate(self.cardinal.MAIN_CFG)
+            self.bot.send_message(m.chat.id, _("uah_rate_info", currency.format_amount(uah_rate),
+                                               currency.format_amount(funpay_rate)))
             return
 
         raw_rate = parts[1].strip().replace(",", ".")
@@ -407,9 +409,47 @@ class TGBot:
         if not self.cardinal.MAIN_CFG.has_section("DisplayCurrency"):
             self.cardinal.MAIN_CFG.add_section("DisplayCurrency")
         self.cardinal.MAIN_CFG.set("DisplayCurrency", "currency", "UAH")
-        self.cardinal.MAIN_CFG.set("DisplayCurrency", "rubToUahRate", currency.format_amount(rate))
+        self.cardinal.MAIN_CFG.set("DisplayCurrency", "uahRate", currency.format_amount(rate))
         self.cardinal.save_config(self.cardinal.MAIN_CFG, "configs/_main.cfg")
         self.bot.send_message(m.chat.id, _("uah_rate_changed", currency.format_amount(rate)))
+
+    def change_usdt_rate(self, m: Message):
+        """
+        Показывает, меняет или обновляет курс FunPay RUB -> USDT.
+        """
+        parts = m.text.split(maxsplit=1)
+        if len(parts) == 1:
+            funpay_rate = currency.get_funpay_rub_to_usd_rate(self.cardinal.MAIN_CFG)
+            self.bot.send_message(m.chat.id, _("usdt_rate_info", currency.format_amount(funpay_rate)))
+            return
+
+        raw_rate = parts[1].strip().replace(",", ".")
+        if raw_rate.lower() in ("auto", "funpay", "update", "обновить"):
+            msg = self.bot.send_message(m.chat.id, _("usdt_rate_updating"))
+            if self.cardinal.update_funpay_withdraw_rate():
+                funpay_rate = currency.get_funpay_rub_to_usd_rate(self.cardinal.MAIN_CFG)
+                self.bot.edit_message_text(_("usdt_rate_auto_changed", currency.format_amount(funpay_rate)),
+                                           msg.chat.id, msg.id)
+            else:
+                self.bot.edit_message_text(_("usdt_rate_auto_error"), msg.chat.id, msg.id)
+            return
+
+        try:
+            rate = float(raw_rate)
+        except ValueError:
+            self.bot.send_message(m.chat.id, _("usdt_rate_error"))
+            return
+
+        if rate <= 0:
+            self.bot.send_message(m.chat.id, _("usdt_rate_error"))
+            return
+
+        if not self.cardinal.MAIN_CFG.has_section("DisplayCurrency"):
+            self.cardinal.MAIN_CFG.add_section("DisplayCurrency")
+        self.cardinal.MAIN_CFG.set("DisplayCurrency", "funpayRubToUsdRate", currency.format_amount(rate))
+        self.cardinal.MAIN_CFG.set("DisplayCurrency", "funpayRateUpdatedAt", str(int(time.time())))
+        self.cardinal.save_config(self.cardinal.MAIN_CFG, "configs/_main.cfg")
+        self.bot.send_message(m.chat.id, _("usdt_rate_changed", currency.format_amount(rate)))
 
     def act_change_cookie(self, m: Message):
         """
@@ -1101,6 +1141,7 @@ class TGBot:
         self.msg_handler(self.send_settings_menu, commands=["menu", "start"])
         self.msg_handler(self.send_profile, commands=["profile"])
         self.msg_handler(self.change_uah_rate, commands=["UAH", "uah"])
+        self.msg_handler(self.change_usdt_rate, commands=["usdt", "USDT"])
         self.msg_handler(self.act_change_cookie, commands=["gkey"])
         self.msg_handler(self.change_cookie, func=lambda m: self.check_state(m.chat.id, m.from_user.id,
                                                                              CBT.CHANGE_GOLDEN_KEY))

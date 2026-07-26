@@ -325,9 +325,15 @@ refund_complete = "✅ Кошти за замовлення <code>#{}</code> п�
 
 updating_profile = "Оновлюю статистику облікового запису (це може зайняти деякий час)..."
 profile_updating_error = "❌ Не вдалося оновити статистику облікового запису."
-uah_rate_info = "Текущий курс: <code>1 RUB = {} UAH</code>\n\nЧтобы изменить курс, отправь:\n<code>/UAH 0.505</code>"
-uah_rate_changed = "✅ Курс UAH изменен: <code>1 RUB = {} UAH</code>\n\nТеперь рублевые суммы будут отображаться в гривнах по этому курсу."
-uah_rate_error = "❌ Неверный курс. Пример: <code>/UAH 0.505</code>"
+uah_rate_info = "Текущий курс: <code>1 USDT = {} UAH</code>\nКурс FunPay: <code>1 USDT = {} RUB</code>\n\nЧтобы изменить UAH-курс, отправь:\n<code>/UAH 43.5</code>"
+uah_rate_changed = "✅ Курс UAH изменен: <code>1 USDT = {} UAH</code>\n\nПокупки считаются без комиссии. Баланс в /profile считается с комиссией вывода 6%."
+uah_rate_error = "❌ Неверный курс. Пример: <code>/UAH 43.5</code>"
+usdt_rate_info = "Текущий курс FunPay: <code>1 USDT = {} RUB</code>\n\nИзменить вручную:\n<code>/usdt 80.521</code>\n\nОбновить с FunPay сейчас:\n<code>/usdt auto</code>"
+usdt_rate_changed = "✅ Курс FunPay изменен: <code>1 USDT = {} RUB</code>"
+usdt_rate_updating = "Обновляю курс FunPay со страницы баланса..."
+usdt_rate_auto_changed = "✅ Курс FunPay обновлен с сайта: <code>1 USDT = {} RUB</code>"
+usdt_rate_auto_error = "❌ Не удалось обновить курс с FunPay. Оставил последний сохраненный курс."
+usdt_rate_error = "❌ Неверный курс. Пример: <code>/usdt 80.521</code>"
 
 act_change_golden_key = "Введи golden_key"
 cookie_changed = "✅ golden_key успішно змінено{}.\n"
@@ -446,7 +452,8 @@ hidden_commands_help = """<b>Скрытые команды:</b>
 /logs - загрузить текущий лог-файл
 /del_logs - удалить старые лог-файлы
 /gkey - изменить golden_key
-/UAH 0.505 - изменить курс UAH
+/UAH 43.5 - изменить курс UAH
+/usdt 80.521 - изменить курс FunPay
 /update - обновить версию
 /ban - добавить пользователя в ЧС
 /unban - удалить пользователя из ЧС
