@@ -160,7 +160,7 @@ def load_main_config(config_path: str):
             config.set("DisplayCurrency", "uahRate", "43.5")
             config.set("DisplayCurrency", "funpayRubToUsdRate", "80.521")
             config.set("DisplayCurrency", "funpayRateUpdatedAt", "0")
-            config.set("DisplayCurrency", "withdrawCommissionPercent", "6")
+            config.set("DisplayCurrency", "withdrawCommissionPercent", "0")
             with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                 config.write(f)
 
@@ -278,7 +278,12 @@ def load_main_config(config_path: str):
                     config.write(f)
             elif section_name == "DisplayCurrency" and param_name == "withdrawCommissionPercent" and \
                     param_name not in config[section_name]:
-                config.set("DisplayCurrency", "withdrawCommissionPercent", "6")
+                config.set("DisplayCurrency", "withdrawCommissionPercent", "0")
+                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
+                    config.write(f)
+            elif section_name == "DisplayCurrency" and param_name == "withdrawCommissionPercent" and \
+                    config[section_name][param_name] != "0":
+                config.set("DisplayCurrency", "withdrawCommissionPercent", "0")
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)
 

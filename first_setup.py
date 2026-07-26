@@ -87,7 +87,7 @@ default_config = {
         "uahRate": "43.5",
         "funpayRubToUsdRate": "80.521",
         "funpayRateUpdatedAt": "0",
-        "withdrawCommissionPercent": "6"
+        "withdrawCommissionPercent": "0"
     },
 
     "Other": {

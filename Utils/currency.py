@@ -6,7 +6,7 @@ from configparser import ConfigParser
 DEFAULT_DISPLAY_CURRENCY = "UAH"
 DEFAULT_UAH_RATE = 43.5
 DEFAULT_FUNPAY_RUB_TO_USD_RATE = 80.521
-DEFAULT_WITHDRAW_COMMISSION_PERCENT = 6.0
+DEFAULT_WITHDRAW_COMMISSION_PERCENT = 0.0
 
 
 def get_display_currency(config: ConfigParser | None) -> str:
@@ -34,7 +34,7 @@ def get_funpay_rub_to_usd_rate(config: ConfigParser | None) -> float:
 
 
 def get_withdraw_commission_percent(config: ConfigParser | None) -> float:
-    return _get_positive_float(config, "withdrawCommissionPercent", DEFAULT_WITHDRAW_COMMISSION_PERCENT)
+    return DEFAULT_WITHDRAW_COMMISSION_PERCENT
 
 
 def format_amount(amount: int | float) -> str:
@@ -55,8 +55,6 @@ def is_usd(currency) -> bool:
 def rub_to_uah(amount: int | float, config: ConfigParser | None = None,
                include_withdraw_commission: bool = False) -> float:
     rub_amount = float(amount)
-    if include_withdraw_commission:
-        rub_amount *= max(0, 100 - get_withdraw_commission_percent(config)) / 100
     usdt_amount = rub_amount / get_funpay_rub_to_usd_rate(config)
     return usdt_amount * get_uah_rate(config)
 
@@ -76,4 +74,4 @@ def format_rub_as_display(amount: int | float, config: ConfigParser | None = Non
 
 
 def format_balance_short(balance, config: ConfigParser | None = None) -> str:
-    return format_rub_as_display(balance.total_rub, config, True)
+    return format_rub_as_display(balance.total_rub, config, False)

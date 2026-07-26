@@ -345,7 +345,7 @@ withdraw_failed = "❌ Не вдалося виконати вивід.\n\n<code
 withdraw_success = "✅ Запит на вивід відправлено.\n\nСписано: <code>{} ₴</code>\nДо отримання: <code>{} ₴</code>\nВідправлено: <code>{}</code>"
 withdraw_cancelled = "Вивід скасовано."
 uah_rate_info = "Поточний курс: <code>1 USDT = {} UAH</code>\nВнутрішній курс FunPay: <code>{}</code>\n\nЩоб змінити UAH-курс, відправ:\n<code>/UAH 43.5</code>"
-uah_rate_changed = "✅ Курс UAH змінено: <code>1 USDT = {} UAH</code>\n\nПокупки рахуються без комісії. Баланс у /profile рахується з комісією виводу 6%."
+uah_rate_changed = "✅ Курс UAH змінено: <code>1 USDT = {} UAH</code>\n\nПокупки, баланс і вивід рахуються прямим перерахунком у UAH."
 uah_rate_error = "❌ Неправильний курс. Приклад: <code>/UAH 43.5</code>"
 usdt_rate_info = "Поточний внутрішній курс FunPay: <code>{}</code>\n\nЗмінити вручну:\n<code>/usdt 80.521</code>\n\nОновити з FunPay зараз:\n<code>/usdt auto</code>"
 usdt_rate_changed = "✅ Внутрішній курс FunPay змінено: <code>{}</code>"

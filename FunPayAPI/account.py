@@ -724,7 +724,7 @@ class Account:
                 preview = self.method("post", "withdraw/withdraw", headers, payload, raise_not_200=True).json()
                 amount_ext = normalize_float(preview.get("amount_ext"))
                 if amount_ext:
-                    return amount_int * 0.94 / amount_ext
+                    return amount_int / amount_ext
 
         text = parser.get_text("\n", strip=True)
         patterns = (

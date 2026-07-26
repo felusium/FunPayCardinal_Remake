@@ -249,8 +249,8 @@ def generate_profile_text(cardinal: Cardinal) -> str:
     """
     account = cardinal.account  # locale
     balance = cardinal.balance
-    uah_total = currency.format_amount(currency.rub_to_uah(balance.total_rub, cardinal.MAIN_CFG, True))
-    uah_available = currency.format_amount(currency.rub_to_uah(balance.available_rub, cardinal.MAIN_CFG, True))
+    uah_total = currency.format_amount(currency.rub_to_uah(balance.total_rub, cardinal.MAIN_CFG, False))
+    uah_available = currency.format_amount(currency.rub_to_uah(balance.available_rub, cardinal.MAIN_CFG, False))
     return f"""{_("profile_title")}
 
 <b>{_("profile_active_orders")}:</b> <code>{account.active_sales}</code>
