@@ -821,7 +821,10 @@ class Account:
         json_response = response.json()
         if json_response.get("error"):
             raise exceptions.WithdrawError(response, json_response.get("msg"))
-        return float(str(json_response.get("amount_ext")).replace(",", "."))
+        amount_ext = json_response.get("amount_ext")
+        if amount_ext is None:
+            raise exceptions.WithdrawError(response, json_response.get("msg") or "FunPay не вернул сумму для расчета вывода.")
+        return float(str(amount_ext).replace(",", "."))
 
     def withdraw_by_ids(self, currency_id: str, ext_currency_id: str, wallet: str, amount_ext: int | float,
                         confirmation_code: str | None = None) -> float:
@@ -856,7 +859,14 @@ class Account:
         json_response = response.json()
         if json_response.get("error"):
             raise exceptions.WithdrawError(response, json_response.get("msg"))
-        return float(str(json_response.get("amount_int")).replace(",", "."))
+        amount_int = json_response.get("amount_int")
+        if amount_int is None:
+            message = json_response.get("msg") or json_response.get("message")
+            if not message:
+                message = "FunPay запросил код подтверждения." if not confirmation_code else \
+                    "FunPay не вернул подтверждение вывода."
+            raise exceptions.WithdrawError(response, message)
+        return float(str(amount_int).replace(",", "."))
 
     def get_chat_history(self, chat_id: int | str, last_message_id: int | None = None,
                          interlocutor_username: Optional[str] = None, from_id: int = 0) -> list[types.Message]:
