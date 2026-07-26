@@ -827,7 +827,7 @@ class Account:
         return float(str(amount_ext).replace(",", "."))
 
     def withdraw_by_ids(self, currency_id: str, ext_currency_id: str, wallet: str, amount_ext: int | float,
-                        confirmation_code: str | None = None) -> float:
+                        confirmation_code: str | None = None, amount_int: int | float | None = None) -> float:
         """
         Подтверждает вывод на сохраненный кошелек FunPay.
         """
@@ -844,11 +844,15 @@ class Account:
             "preview": "",
             "currency_id": currency_id,
             "ext_currency_id": ext_currency_id,
-            "wallet": wallet,
-            "amount_ext": str(amount_ext)
+            "wallet": wallet
         }
+        if amount_int is not None:
+            payload["amount_int"] = str(amount_int)
+        else:
+            payload["amount_ext"] = str(amount_ext)
         if confirmation_code:
             payload.update({
+                "twofactor_code": confirmation_code,
                 "code": confirmation_code,
                 "otp": confirmation_code,
                 "totp": confirmation_code,
@@ -857,14 +861,25 @@ class Account:
             })
         response = self.method("post", "withdraw/withdraw", headers, payload, raise_not_200=True)
         json_response = response.json()
+        if json_response.get("twofactor_error"):
+            raise exceptions.WithdrawError(response, json_response.get("twofactor_msg") or
+                                           json_response.get("msg") or "Неверный код подтверждения.")
         if json_response.get("error"):
             raise exceptions.WithdrawError(response, json_response.get("msg"))
+        if json_response.get("twofactor_enabled") and not confirmation_code:
+            raise exceptions.WithdrawError(response, json_response.get("twofactor_msg") or
+                                           json_response.get("msg") or "FunPay запросил код подтверждения.")
+        if json_response.get("url") and confirmation_code and amount_int is not None:
+            return float(str(amount_int).replace(",", "."))
         amount_int = json_response.get("amount_int")
         if amount_int is None:
             message = json_response.get("msg") or json_response.get("message")
             if not message:
-                message = "FunPay запросил код подтверждения." if not confirmation_code else \
-                    "FunPay не вернул подтверждение вывода."
+                if not confirmation_code:
+                    message = "FunPay запросил код подтверждения."
+                else:
+                    keys = ", ".join(sorted(map(str, json_response.keys()))) or "пустой ответ"
+                    message = f"FunPay не вернул подтверждение вывода. Поля ответа: {keys}"
             raise exceptions.WithdrawError(response, message)
         return float(str(amount_int).replace(",", "."))
 

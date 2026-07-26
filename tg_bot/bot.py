@@ -689,7 +689,8 @@ class TGBot:
         wallet = session["wallet"]
         try:
             amount_int = self.cardinal.account.withdraw_by_ids(wallet["currency_id"], wallet["ext_currency_id"],
-                                                               wallet["wallet"], session["amount_ext"])
+                                                               wallet["wallet"], session["amount_ext"],
+                                                               amount_int=session["amount_int"])
             amount_int = amount_int if amount_int is not None else session["amount_int"]
         except Exception as e:
             if self._withdraw_needs_2fa(e):
@@ -730,7 +731,8 @@ class TGBot:
 
         try:
             amount_int = self.cardinal.account.withdraw_by_ids(wallet["currency_id"], wallet["ext_currency_id"],
-                                                               wallet["wallet"], session["amount_ext"], code)
+                                                               wallet["wallet"], session["amount_ext"], code,
+                                                               amount_int=session["amount_int"])
             amount_int = amount_int if amount_int is not None else session["amount_int"]
         except Exception as e:
             logger.warning("Не удалось выполнить вывод средств с кодом подтверждения.")
