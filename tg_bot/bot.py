@@ -560,6 +560,15 @@ class TGBot:
             return float(amount_ext) * currency.get_uah_rate(self.cardinal.MAIN_CFG)
         return float(amount_ext)
 
+    def _format_withdraw_ext_amount(self, amount_ext: int | float, wallet: dict) -> str:
+        ext_id = str(wallet.get("ext_currency_id", "")).upper()
+        ext_name = str(wallet.get("ext_currency_name", "")).upper()
+        if "USDT" in ext_id or "USDT" in ext_name:
+            unit = "USDT"
+        else:
+            unit = wallet.get("ext_currency_name") or wallet.get("ext_currency_id") or ""
+        return f"{currency.format_amount(amount_ext)} {unit}".strip()
+
     def _parse_withdraw_amount(self, raw_text: str, available_rub: float) -> float:
         amount_text = raw_text.strip().replace(",", ".").lower()
         if amount_text in ("all", "все", "всё", "усе"):
@@ -576,9 +585,8 @@ class TGBot:
         if any(marker in amount_text for marker in ("rub", "руб", "₽")):
             return amount
 
-        commission = max(0, 100 - currency.get_withdraw_commission_percent(self.cardinal.MAIN_CFG)) / 100
         return amount * currency.get_funpay_rub_to_usd_rate(self.cardinal.MAIN_CFG) / \
-            currency.get_uah_rate(self.cardinal.MAIN_CFG) / commission
+            currency.get_uah_rate(self.cardinal.MAIN_CFG)
 
     def open_withdraw_menu(self, c: CallbackQuery):
         """
@@ -645,7 +653,7 @@ class TGBot:
         if amount_int > float(self.cardinal.balance.available_rub):
             self.bot.send_message(m.chat.id, _("withdraw_not_enough_balance",
                                                currency.format_amount(self._withdraw_rub_to_uah(
-                                                   self.cardinal.balance.available_rub, True))))
+                                                   self.cardinal.balance.available_rub, False))))
             return
 
         try:
@@ -669,6 +677,7 @@ class TGBot:
         text = _("withdraw_confirm_text",
                  currency.format_amount(self._withdraw_rub_to_uah(amount_int, False)),
                  currency.format_amount(self._withdraw_ext_to_uah(amount_ext, wallet)),
+                 utils.escape(self._format_withdraw_ext_amount(amount_ext, wallet)),
                  utils.escape(wallet.get("wallet", "-")))
         self.bot.send_message(m.chat.id, text, reply_markup=self._withdraw_confirm_keyboard())
 
@@ -714,7 +723,8 @@ class TGBot:
             logger.debug("TRACEBACK", exc_info=True)
         self.bot.edit_message_text(_("withdraw_success",
                                     currency.format_amount(self._withdraw_rub_to_uah(amount_int, False)),
-                                    currency.format_amount(self._withdraw_ext_to_uah(session["amount_ext"], wallet))),
+                                    currency.format_amount(self._withdraw_ext_to_uah(session["amount_ext"], wallet)),
+                                    utils.escape(self._format_withdraw_ext_amount(session["amount_ext"], wallet))),
                                    c.message.chat.id, c.message.id)
         self.bot.answer_callback_query(c.id)
 
@@ -748,7 +758,8 @@ class TGBot:
             logger.debug("TRACEBACK", exc_info=True)
         self.bot.send_message(m.chat.id, _("withdraw_success",
                                            currency.format_amount(self._withdraw_rub_to_uah(amount_int, False)),
-                                           currency.format_amount(self._withdraw_ext_to_uah(session["amount_ext"], wallet))))
+                                           currency.format_amount(self._withdraw_ext_to_uah(session["amount_ext"], wallet)),
+                                           utils.escape(self._format_withdraw_ext_amount(session["amount_ext"], wallet))))
 
     def act_manual_delivery_test(self, m: Message):
         """
