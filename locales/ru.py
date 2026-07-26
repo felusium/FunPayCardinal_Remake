@@ -325,6 +325,28 @@ refund_complete = "✅ Средства по заказу <code>#{}</code> во�
 
 updating_profile = "Обновляю статистику аккаунта (это может занять некоторое время)..."
 profile_updating_error = "❌ Не удалось обновить статистику аккаунта."
+profile_title = "Статистика аккаунта"
+profile_active_orders = "Незавершенных заказов"
+profile_balance = "Баланс"
+profile_uah_balance_line = "    <b>UAH:</b> <code>{} ₴</code> можно вывести <code>{} ₴</code>"
+profile_usd_balance_line = "    <b>$:</b> <code>{} $</code> можно вывести <code>{} $</code>"
+profile_eur_balance_line = "    <b>€:</b> <code>{} €</code> можно вывести <code>{} €</code>"
+profile_updated = "Обновлено"
+profile_withdraw_button = "Вывести деньги"
+withdraw_loading = "Загружаю сохраненные кошельки FunPay..."
+withdraw_choose_wallet = "Выбери кошелек для вывода. Показываются только кошельки, сохраненные на FunPay."
+withdraw_no_wallets = "❌ На FunPay не найдено сохраненных кошельков для вывода RUB. Добавь кошелек на странице https://funpay.com/account/wallets и попробуй снова."
+withdraw_wallets_error = "❌ Не удалось получить кошельки FunPay.\n\n<code>{}</code>"
+withdraw_session_expired = "Сессия вывода устарела. Открой вывод заново."
+withdraw_enter_amount = "Кошелек: <code>{}</code>\n\nВведи сумму вывода: <code>1500</code> в RUB, <code>1000 UAH</code> / <code>1000 грн</code> в гривнах или <code>all</code> для всего доступного баланса."
+withdraw_amount_error = "❌ Неверная сумма. Примеры: <code>1500</code>, <code>1000 UAH</code>, <code>1000 грн</code>, <code>all</code>."
+withdraw_not_enough_balance = "❌ Недостаточно доступного баланса. Сейчас доступно: <code>{} RUB</code>."
+withdraw_preview_error = "❌ Не удалось рассчитать вывод.\n\n<code>{}</code>"
+withdraw_confirm_text = "<b>Подтверди вывод средств</b>\n\nС баланса: <code>{} {}</code>\nК получению: <code>{} {}</code>\nКошелек: <code>{}</code>\n\nПосле нажатия <b>Да</b> будет отправлен запрос на вывод."
+withdraw_2fa_required = "FunPay запросил код подтверждения.\n\nВведи код из аутентификатора."
+withdraw_failed = "❌ Не удалось выполнить вывод.\n\n<code>{}</code>"
+withdraw_success = "✅ Запрос на вывод отправлен.\n\nСписано: <code>{} {}</code>\nК получению: <code>{} {}</code>"
+withdraw_cancelled = "Вывод отменен."
 uah_rate_info = "Текущий курс: <code>1 USDT = {} UAH</code>\nКурс FunPay: <code>1 USDT = {} RUB</code>\n\nЧтобы изменить UAH-курс, отправь:\n<code>/UAH 43.5</code>"
 uah_rate_changed = "✅ Курс UAH изменен: <code>1 USDT = {} UAH</code>\n\nПокупки считаются без комиссии. Баланс в /profile считается с комиссией вывода 6%."
 uah_rate_error = "❌ Неверный курс. Пример: <code>/UAH 43.5</code>"
@@ -446,6 +468,7 @@ cmd_unban = "удалить пользователя из ЧС"
 cmd_black_list = "черный список"
 cmd_logs = "загрузить текущий лог-файл"
 cmd_restart = "Restart"
+cmd_old = "Список #"
 hidden_commands_help = """<b>Скрытые команды:</b>
 
 /restart - перезапустить бота
@@ -455,10 +478,22 @@ hidden_commands_help = """<b>Скрытые команды:</b>
 /UAH 43.5 - изменить курс UAH
 /usdt 80.521 - изменить курс FunPay
 /update - обновить версию
+/old - Список #
 /ban - добавить пользователя в ЧС
 /unban - удалить пользователя из ЧС
 /black_list - показать черный список
 /test_lot - создать ключ выдачи"""
+
+callback_access_denied = "Доступ запрещен."
+logfile_last_error = "<b>Текст последней ошибки:</b>\n\n{}"
+logfile_no_errors = "<b>Ошибок в последнем лог-файле не обнаружено.</b>"
+logfile_no_old_logs = "Старых логов не найдено."
+logfile_old_deleted = "✅ Удалено старых лог-файлов: <code>{}</code>"
+update_disabled_manual = "Обновления отключены. Обновляй скрипт вручную, когда сам решишь."
+update_downloading = "Скачиваю обновление из felusium/FunPayCardinal_Remake..."
+update_failed = "❌ Не удалось обновиться: <code>{}</code>"
+update_success_restart = "✅ {}\n\nПерезапусти бота командой /restart."
+lang_warning_uk = "Переклад складено за допомогою ChatGPT."
 
 # - Описание переменных
 v_edit_greeting_text = "Введи текст приветственного сообщения."

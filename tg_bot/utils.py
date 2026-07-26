@@ -19,6 +19,10 @@ import time
 import Utils.cardinal_tools
 from Utils import currency
 from tg_bot import CBT
+from locales.localizer import Localizer
+
+localizer = Localizer()
+_ = localizer.translate
 
 
 class NotificationTypes:
@@ -245,17 +249,17 @@ def generate_profile_text(cardinal: Cardinal) -> str:
     """
     account = cardinal.account  # locale
     balance = cardinal.balance
-    rub_total = currency.format_rub_as_display(balance.total_rub, cardinal.MAIN_CFG, True)
-    rub_available = currency.format_rub_as_display(balance.available_rub, cardinal.MAIN_CFG, True)
-    return f"""Статистика аккаунта
+    uah_total = currency.format_amount(currency.rub_to_uah(balance.total_rub, cardinal.MAIN_CFG, True))
+    uah_available = currency.format_amount(currency.rub_to_uah(balance.available_rub, cardinal.MAIN_CFG, True))
+    return f"""{_("profile_title")}
 
-<b>Незавершенных заказов:</b> <code>{account.active_sales}</code>
-<b>Баланс:</b> 
-    <b>UAH:</b> <code>{rub_total}</code>, доступно для вывода <code>{rub_available}</code> с учетом комиссии.
-    <b>$:</b> <code>{currency.format_amount(balance.total_usd)} $</code>, доступно для вывода <code>{currency.format_amount(balance.available_usd)} $</code>.
-    <b>€:</b> <code>{currency.format_amount(balance.total_eur)} €</code>, доступно для вывода <code>{currency.format_amount(balance.available_eur)} €</code>.
+<b>{_("profile_active_orders")}:</b> <code>{account.active_sales}</code>
+<b>{_("profile_balance")}:</b> 
+{_("profile_uah_balance_line", uah_total, uah_available)}
+{_("profile_usd_balance_line", currency.format_amount(balance.total_usd), currency.format_amount(balance.available_usd))}
+{_("profile_eur_balance_line", currency.format_amount(balance.total_eur), currency.format_amount(balance.available_eur))}
 
-<i>Обновлено:</i>  <code>{time.strftime('%H:%M:%S', time.localtime(account.last_update))}</code>"""
+<i>{_("profile_updated")}:</i>  <code>{time.strftime('%H:%M:%S', time.localtime(account.last_update))}</code>"""
 
 
 def generate_lot_info_text(lot_obj: configparser.SectionProxy) -> str:

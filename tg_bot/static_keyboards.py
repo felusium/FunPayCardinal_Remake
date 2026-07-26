@@ -11,7 +11,9 @@ def CLEAR_STATE_BTN() -> K:
 
 
 def REFRESH_BTN() -> K:
-    return K().add(B(_("gl_refresh"), callback_data=CBT.UPDATE_PROFILE))
+    return K() \
+        .add(B(_("gl_refresh"), callback_data=CBT.UPDATE_PROFILE)) \
+        .add(B(_("profile_withdraw_button"), callback_data=CBT.WITHDRAW_MENU))
 
 
 def SETTINGS_SECTIONS() -> K:

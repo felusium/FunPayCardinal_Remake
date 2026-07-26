@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from FunPayAPI import Account
+from FunPayAPI.common import exceptions
 from tg_bot.utils import NotificationTypes
 
 if TYPE_CHECKING:
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
 import os
 import sys
 import time
+import re
 import random
 import string
 import psutil
@@ -69,13 +71,14 @@ class TGBot:
         self.answer_templates = utils.load_answer_templates()  # заготовки ответов.
         self.authorized_users = utils.load_authorized_users()  # авторизированные пользователи.
         self.notification_scope = f"bot:{self.cardinal.MAIN_CFG['Telegram']['token'].split(':', 1)[0]}"
+        self.withdraw_sessions = {}
 
         self.commands = {
             "menu": "cmd_menu",
             "profile": "cmd_profile",
             "help": "cmd_help",
         }
-        self.visible_commands = ("menu", "profile", "old", "help")
+        self.visible_commands = ("menu", "profile", "help")
         self.__default_notification_settings = {
             utils.NotificationTypes.ad: 1,
             utils.NotificationTypes.announcement: 1
@@ -366,7 +369,7 @@ class TGBot:
                          c.message.chat.id))
         self.attempts[c.from_user.id] = self.attempts.get(c.from_user.id, 0) + 1
         if self.attempts[c.from_user.id] <= 5:
-            self.bot.answer_callback_query(c.id, "Доступ запрещен.", show_alert=True)
+            self.bot.answer_callback_query(c.id, _("callback_access_denied"), show_alert=True)
         return
 
     # Команды
@@ -515,6 +518,226 @@ class TGBot:
         self.bot.edit_message_text(utils.generate_profile_text(self.cardinal), c.message.chat.id,
                                    c.message.id, reply_markup=skb.REFRESH_BTN())
 
+    def _withdraw_key(self, chat_id: int, user_id: int) -> tuple[int, int]:
+        return chat_id, user_id
+
+    def _format_withdraw_wallet(self, wallet: dict) -> str:
+        ext_name = wallet.get("ext_currency_name") or wallet.get("ext_currency_id")
+        wallet_value = wallet.get("wallet") or "-"
+        return f"{ext_name}: {wallet_value}"
+
+    def _withdraw_wallets_keyboard(self, wallets: list[dict]) -> K:
+        keyboard = K()
+        for index, wallet in enumerate(wallets):
+            keyboard.add(B(self._format_withdraw_wallet(wallet), callback_data=f"{CBT.WITHDRAW_WALLET}:{index}"))
+        keyboard.add(B(_("gl_cancel"), callback_data=CBT.CLEAR_STATE))
+        return keyboard
+
+    def _withdraw_confirm_keyboard(self) -> K:
+        return K().row(B(_("gl_yes"), callback_data=f"{CBT.WITHDRAW_CONFIRM}:yes"),
+                       B(_("gl_cancel"), callback_data=f"{CBT.WITHDRAW_CONFIRM}:no"))
+
+    def _withdraw_error_text(self, err: Exception) -> str:
+        if isinstance(err, exceptions.WithdrawError) and err.error_message:
+            return utils.escape(str(err.error_message))
+        short = err.short_str() if hasattr(err, "short_str") else str(err)
+        return utils.escape(short)
+
+    def _withdraw_needs_2fa(self, err: Exception) -> bool:
+        if not isinstance(err, exceptions.WithdrawError):
+            return False
+        text = str(err.error_message or "").lower()
+        markers = ("код", "code", "2fa", "otp", "totp", "аутентифик", "authenticator", "подтверж")
+        return any(marker in text for marker in markers)
+
+    def _parse_withdraw_amount(self, raw_text: str, available_rub: float) -> float:
+        amount_text = raw_text.strip().replace(",", ".").lower()
+        if amount_text in ("all", "все", "всё", "усе"):
+            return float(available_rub)
+
+        match = re.search(r"\d+(?:\.\d+)?", amount_text)
+        if not match:
+            raise ValueError
+
+        amount = float(match.group(0))
+        if amount <= 0:
+            raise ValueError
+
+        if any(marker in amount_text for marker in ("uah", "грн", "₴")):
+            commission = max(0, 100 - currency.get_withdraw_commission_percent(self.cardinal.MAIN_CFG)) / 100
+            return amount * currency.get_funpay_rub_to_usd_rate(self.cardinal.MAIN_CFG) / \
+                currency.get_uah_rate(self.cardinal.MAIN_CFG) / commission
+        return amount
+
+    def open_withdraw_menu(self, c: CallbackQuery):
+        """
+        Открывает ручной вывод средств через сохраненные кошельки FunPay.
+        """
+        msg = self.bot.send_message(c.message.chat.id, _("withdraw_loading"))
+        self.bot.answer_callback_query(c.id)
+        try:
+            wallets = self.cardinal.account.get_withdraw_wallets("rub")
+        except Exception as e:
+            logger.warning("Не удалось получить список кошельков FunPay.")
+            logger.debug("TRACEBACK", exc_info=True)
+            self.bot.edit_message_text(_("withdraw_wallets_error", self._withdraw_error_text(e)), msg.chat.id, msg.id)
+            return
+
+        if not wallets:
+            self.bot.edit_message_text(_("withdraw_no_wallets"), msg.chat.id, msg.id)
+            return
+
+        key = self._withdraw_key(c.message.chat.id, c.from_user.id)
+        self.withdraw_sessions[key] = {"wallets": wallets}
+        self.bot.edit_message_text(_("withdraw_choose_wallet"), msg.chat.id, msg.id,
+                                   reply_markup=self._withdraw_wallets_keyboard(wallets))
+
+    def choose_withdraw_wallet(self, c: CallbackQuery):
+        key = self._withdraw_key(c.message.chat.id, c.from_user.id)
+        session = self.withdraw_sessions.get(key)
+        if not session:
+            self.bot.answer_callback_query(c.id, _("withdraw_session_expired"), show_alert=True)
+            return
+
+        try:
+            wallet_index = int(c.data.split(":")[1])
+            wallet = session["wallets"][wallet_index]
+        except (IndexError, KeyError, ValueError):
+            self.bot.answer_callback_query(c.id, _("gl_error_try_again"), show_alert=True)
+            return
+
+        session["wallet"] = wallet
+        self.bot.edit_message_text(_("withdraw_enter_amount", utils.escape(self._format_withdraw_wallet(wallet))),
+                                   c.message.chat.id, c.message.id,
+                                   reply_markup=skb.CLEAR_STATE_BTN())
+        self.set_state(c.message.chat.id, c.message.id, c.from_user.id, CBT.WITHDRAW_AMOUNT, session)
+        self.bot.answer_callback_query(c.id)
+
+    def enter_withdraw_amount(self, m: Message):
+        state = self.get_state(m.chat.id, m.from_user.id)
+        session = state["data"]
+        wallet = session["wallet"]
+
+        try:
+            self.cardinal.account.get()
+            self.cardinal.balance = self.cardinal.get_balance()
+            amount_int = self._parse_withdraw_amount(m.text, float(self.cardinal.balance.available_rub))
+        except ValueError:
+            self.bot.reply_to(m, _("withdraw_amount_error"))
+            return
+        except Exception as e:
+            logger.warning("Не удалось обновить баланс перед выводом средств.")
+            logger.debug("TRACEBACK", exc_info=True)
+            self.bot.send_message(m.chat.id, _("withdraw_preview_error", self._withdraw_error_text(e)))
+            return
+
+        if amount_int > float(self.cardinal.balance.available_rub):
+            self.bot.send_message(m.chat.id, _("withdraw_not_enough_balance",
+                                               currency.format_amount(self.cardinal.balance.available_rub)))
+            return
+
+        try:
+            amount_ext = self.cardinal.account.calc_withdraw(wallet["currency_id"], wallet["ext_currency_id"],
+                                                             wallet["wallet"], amount_int)
+        except Exception as e:
+            logger.warning("Не удалось рассчитать вывод средств.")
+            logger.debug("TRACEBACK", exc_info=True)
+            self.bot.send_message(m.chat.id, _("withdraw_preview_error", self._withdraw_error_text(e)))
+            return
+
+        self.clear_state(m.chat.id, m.from_user.id, True)
+        try:
+            self.bot.delete_message(m.chat.id, m.id)
+        except Exception:
+            pass
+
+        session["amount_int"] = amount_int
+        session["amount_ext"] = amount_ext
+        self.withdraw_sessions[self._withdraw_key(m.chat.id, m.from_user.id)] = session
+        text = _("withdraw_confirm_text",
+                 currency.format_amount(amount_int),
+                 utils.escape(wallet.get("currency_name", "RUB")),
+                 currency.format_amount(amount_ext),
+                 utils.escape(wallet.get("ext_currency_name", wallet.get("ext_currency_id"))),
+                 utils.escape(wallet.get("wallet", "-")))
+        self.bot.send_message(m.chat.id, text, reply_markup=self._withdraw_confirm_keyboard())
+
+    def confirm_withdraw(self, c: CallbackQuery):
+        action = c.data.split(":")[1]
+        key = self._withdraw_key(c.message.chat.id, c.from_user.id)
+        session = self.withdraw_sessions.get(key)
+        if not session:
+            self.bot.answer_callback_query(c.id, _("withdraw_session_expired"), show_alert=True)
+            return
+
+        if action != "yes":
+            self.withdraw_sessions.pop(key, None)
+            self.bot.edit_message_text(_("withdraw_cancelled"), c.message.chat.id, c.message.id)
+            self.bot.answer_callback_query(c.id)
+            return
+
+        wallet = session["wallet"]
+        try:
+            amount_int = self.cardinal.account.withdraw_by_ids(wallet["currency_id"], wallet["ext_currency_id"],
+                                                               wallet["wallet"], session["amount_ext"])
+        except Exception as e:
+            if self._withdraw_needs_2fa(e):
+                self.bot.edit_message_text(_("withdraw_2fa_required"), c.message.chat.id, c.message.id,
+                                           reply_markup=skb.CLEAR_STATE_BTN())
+                self.set_state(c.message.chat.id, c.message.id, c.from_user.id, CBT.WITHDRAW_2FA, session)
+                self.bot.answer_callback_query(c.id)
+                return
+            logger.warning("Не удалось выполнить вывод средств.")
+            logger.debug("TRACEBACK", exc_info=True)
+            self.withdraw_sessions.pop(key, None)
+            self.bot.edit_message_text(_("withdraw_failed", self._withdraw_error_text(e)),
+                                       c.message.chat.id, c.message.id)
+            self.bot.answer_callback_query(c.id)
+            return
+
+        self.withdraw_sessions.pop(key, None)
+        try:
+            self.cardinal.balance = self.cardinal.get_balance()
+        except Exception:
+            logger.debug("TRACEBACK", exc_info=True)
+        self.bot.edit_message_text(_("withdraw_success", currency.format_amount(amount_int),
+                                    utils.escape(wallet.get("currency_name", "RUB")),
+                                    currency.format_amount(session["amount_ext"]),
+                                    utils.escape(wallet.get("ext_currency_name", wallet.get("ext_currency_id")))),
+                                   c.message.chat.id, c.message.id)
+        self.bot.answer_callback_query(c.id)
+
+    def enter_withdraw_2fa(self, m: Message):
+        state = self.get_state(m.chat.id, m.from_user.id)
+        session = state["data"]
+        wallet = session["wallet"]
+        code = m.text.strip().replace(" ", "")
+        self.clear_state(m.chat.id, m.from_user.id, True)
+        try:
+            self.bot.delete_message(m.chat.id, m.id)
+        except Exception:
+            pass
+
+        try:
+            amount_int = self.cardinal.account.withdraw_by_ids(wallet["currency_id"], wallet["ext_currency_id"],
+                                                               wallet["wallet"], session["amount_ext"], code)
+        except Exception as e:
+            logger.warning("Не удалось выполнить вывод средств с кодом подтверждения.")
+            logger.debug("TRACEBACK", exc_info=True)
+            self.withdraw_sessions.pop(self._withdraw_key(m.chat.id, m.from_user.id), None)
+            self.bot.send_message(m.chat.id, _("withdraw_failed", self._withdraw_error_text(e)))
+            return
+
+        self.withdraw_sessions.pop(self._withdraw_key(m.chat.id, m.from_user.id), None)
+        try:
+            self.cardinal.balance = self.cardinal.get_balance()
+        except Exception:
+            logger.debug("TRACEBACK", exc_info=True)
+        self.bot.send_message(m.chat.id, _("withdraw_success", currency.format_amount(amount_int),
+                                           utils.escape(wallet.get("currency_name", "RUB")),
+                                           currency.format_amount(session["amount_ext"]),
+                                           utils.escape(wallet.get("ext_currency_name", wallet.get("ext_currency_id")))))
+
     def act_manual_delivery_test(self, m: Message):
         """
         Активирует режим ввода названия лота для ручной генерации ключа теста автовыдачи.
@@ -606,13 +829,14 @@ class TGBot:
                         file_content, right = file_content.rsplit("TRACEBACK", 1)
                         file_content = "\n[".join(file_content.rsplit("\n[", 2)[-2:])
                         right = right.split("\n[", 1)[0]  # locale
-                        result = f"<b>Текст последней ошибки:</b>\n\n[{utils.escape(file_content)}TRACEBACK{utils.escape(right)}"
+                        result = _("logfile_last_error",
+                                   f"[{utils.escape(file_content)}TRACEBACK{utils.escape(right)}")
                         while result:
                             text, result = result[:4096], result[4096:]
                             self.bot.send_message(m.chat.id, text)
                             time.sleep(0.5)
                     else:
-                        self.bot.send_message(m.chat.id, "<b>Ошибок в последнем лог-файле не обнаружено.</b>")  # locale
+                        self.bot.send_message(m.chat.id, _("logfile_no_errors"))
             except:
                 logger.warning("Не удалось отправить лог-файл")
                 logger.debug("TRACEBACK", exc_info=True)
@@ -625,7 +849,7 @@ class TGBot:
         logs_dir = os.path.abspath("logs")
         current_log = os.path.abspath(os.path.join(logs_dir, "log.log"))
         if not os.path.isdir(logs_dir):
-            self.bot.send_message(m.chat.id, "Старых логов не найдено.")
+            self.bot.send_message(m.chat.id, _("logfile_no_old_logs"))
             return
 
         deleted = 0
@@ -640,7 +864,7 @@ class TGBot:
                 logger.warning("Не удалось удалить старый лог-файл %s", path)
                 logger.debug("TRACEBACK", exc_info=True)
 
-        self.bot.send_message(m.chat.id, f"✅ Удалено старых лог-файлов: <code>{deleted}</code>")
+        self.bot.send_message(m.chat.id, _("logfile_old_deleted", deleted))
 
     def send_help(self, m: Message):
         """
@@ -655,18 +879,18 @@ class TGBot:
         self.bot.send_message(m.chat.id, _("about", self.cardinal.VERSION))
 
     def check_updates(self, m: Message):
-        self.bot.send_message(m.chat.id, "Обновления отключены. Обновляй скрипт вручную, когда сам решишь.")
+        self.bot.send_message(m.chat.id, _("update_disabled_manual"))
 
     def update(self, m: Message):
-        self.bot.send_message(m.chat.id, "Скачиваю обновление из felusium/FunPayCardinal_Remake...")
+        self.bot.send_message(m.chat.id, _("update_downloading"))
         try:
             result = updater.update_from_github()
         except Exception as e:
             logger.error("Не удалось установить обновление из GitHub.")
             logger.debug("TRACEBACK", exc_info=True)
-            self.bot.send_message(m.chat.id, f"❌ Не удалось обновиться: <code>{utils.escape(str(e))}</code>")
+            self.bot.send_message(m.chat.id, _("update_failed", utils.escape(str(e))))
             return
-        self.bot.send_message(m.chat.id, f"✅ {utils.escape(result)}\n\nПерезапусти бота командой /restart.")
+        self.bot.send_message(m.chat.id, _("update_success_restart", utils.escape(result)))
 
     def send_system_info(self, m: Message):
         """
@@ -1077,6 +1301,7 @@ class TGBot:
         """
         Обнуляет состояние пользователя по кнопке "Отмена" (CBT.CLEAR_STATE).
         """
+        self.withdraw_sessions.pop(self._withdraw_key(call.message.chat.id, call.from_user.id), None)
         result = self.clear_state(call.message.chat.id, call.from_user.id, True)
         if result is None:
             self.bot.answer_callback_query(call.id)
@@ -1118,7 +1343,7 @@ class TGBot:
                                                  "If you find errors in the translation, check the locale files.\n\n"
                                                  "Thank you :)", show_alert=True)
         elif localizer.current_language == "uk":
-            self.bot.answer_callback_query(c.id, "Переклад складено за допомогою ChatGPT.", show_alert=True)
+            self.bot.answer_callback_query(c.id, _("lang_warning_uk"), show_alert=True)
         elif localizer.current_language == "ru":
             self.bot.answer_callback_query(c.id, '«А я сейчас вам покажу, откуда на Беларусь готовилось нападение»',
                                            show_alert=True)
@@ -1146,6 +1371,13 @@ class TGBot:
         self.msg_handler(self.change_cookie, func=lambda m: self.check_state(m.chat.id, m.from_user.id,
                                                                              CBT.CHANGE_GOLDEN_KEY))
         self.cbq_handler(self.update_profile, lambda c: c.data == CBT.UPDATE_PROFILE)
+        self.cbq_handler(self.open_withdraw_menu, lambda c: c.data == CBT.WITHDRAW_MENU)
+        self.cbq_handler(self.choose_withdraw_wallet, lambda c: c.data.startswith(f"{CBT.WITHDRAW_WALLET}:"))
+        self.msg_handler(self.enter_withdraw_amount,
+                         func=lambda m: self.check_state(m.chat.id, m.from_user.id, CBT.WITHDRAW_AMOUNT))
+        self.cbq_handler(self.confirm_withdraw, lambda c: c.data.startswith(f"{CBT.WITHDRAW_CONFIRM}:"))
+        self.msg_handler(self.enter_withdraw_2fa,
+                         func=lambda m: self.check_state(m.chat.id, m.from_user.id, CBT.WITHDRAW_2FA))
         self.msg_handler(self.act_manual_delivery_test, commands=["test_lot"])
         self.cbq_handler(self.act_edit_greetings_text, lambda c: c.data == CBT.EDIT_GREETINGS_TEXT)
         self.msg_handler(self.edit_greetings_text,
@@ -1260,8 +1492,6 @@ class TGBot:
         """
         if command not in self.visible_commands:
             return
-        if command == "old":
-            help_text = "Список #"
         self.commands[command] = help_text
 
     def setup_commands(self):

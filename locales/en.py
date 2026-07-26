@@ -323,15 +323,37 @@ refund_complete = "✅ The #{} order has been refunded."
 
 updating_profile = "Updating account statistics (this may take some time)..."
 profile_updating_error = "❌ Failed to update account statistics."
-uah_rate_info = "Текущий курс: <code>1 USDT = {} UAH</code>\nКурс FunPay: <code>1 USDT = {} RUB</code>\n\nЧтобы изменить UAH-курс, отправь:\n<code>/UAH 43.5</code>"
-uah_rate_changed = "✅ Курс UAH изменен: <code>1 USDT = {} UAH</code>\n\nПокупки считаются без комиссии. Баланс в /profile считается с комиссией вывода 6%."
-uah_rate_error = "❌ Неверный курс. Пример: <code>/UAH 43.5</code>"
-usdt_rate_info = "Текущий курс FunPay: <code>1 USDT = {} RUB</code>\n\nИзменить вручную:\n<code>/usdt 80.521</code>\n\nОбновить с FunPay сейчас:\n<code>/usdt auto</code>"
-usdt_rate_changed = "✅ Курс FunPay изменен: <code>1 USDT = {} RUB</code>"
-usdt_rate_updating = "Обновляю курс FunPay со страницы баланса..."
-usdt_rate_auto_changed = "✅ Курс FunPay обновлен с сайта: <code>1 USDT = {} RUB</code>"
-usdt_rate_auto_error = "❌ Не удалось обновить курс с FunPay. Оставил последний сохраненный курс."
-usdt_rate_error = "❌ Неверный курс. Пример: <code>/usdt 80.521</code>"
+profile_title = "Account statistics"
+profile_active_orders = "Active orders"
+profile_balance = "Balance"
+profile_uah_balance_line = "    <b>UAH:</b> <code>{} ₴</code> can withdraw <code>{} ₴</code>"
+profile_usd_balance_line = "    <b>$:</b> <code>{} $</code> can withdraw <code>{} $</code>"
+profile_eur_balance_line = "    <b>€:</b> <code>{} €</code> can withdraw <code>{} €</code>"
+profile_updated = "Updated"
+profile_withdraw_button = "Withdraw money"
+withdraw_loading = "Loading saved FunPay wallets..."
+withdraw_choose_wallet = "Choose a wallet for withdrawal. Only wallets saved on FunPay are shown."
+withdraw_no_wallets = "❌ No saved FunPay wallets were found for RUB withdrawals. Add a wallet at https://funpay.com/account/wallets and try again."
+withdraw_wallets_error = "❌ Failed to load FunPay wallets.\n\n<code>{}</code>"
+withdraw_session_expired = "The withdrawal session has expired. Open withdrawal again."
+withdraw_enter_amount = "Wallet: <code>{}</code>\n\nEnter the withdrawal amount: <code>1500</code> in RUB, <code>1000 UAH</code> / <code>1000 грн</code> in hryvnia, or <code>all</code> for the full available balance."
+withdraw_amount_error = "❌ Invalid amount. Examples: <code>1500</code>, <code>1000 UAH</code>, <code>1000 грн</code>, <code>all</code>."
+withdraw_not_enough_balance = "❌ Not enough available balance. Currently available: <code>{} RUB</code>."
+withdraw_preview_error = "❌ Failed to calculate withdrawal.\n\n<code>{}</code>"
+withdraw_confirm_text = "<b>Confirm withdrawal</b>\n\nFrom balance: <code>{} {}</code>\nTo receive: <code>{} {}</code>\nWallet: <code>{}</code>\n\nAfter pressing <b>Yes</b>, the withdrawal request will be sent."
+withdraw_2fa_required = "FunPay requested a confirmation code.\n\nEnter the code from your authenticator."
+withdraw_failed = "❌ Failed to complete withdrawal.\n\n<code>{}</code>"
+withdraw_success = "✅ Withdrawal request sent.\n\nDebited: <code>{} {}</code>\nTo receive: <code>{} {}</code>"
+withdraw_cancelled = "Withdrawal cancelled."
+uah_rate_info = "Current rate: <code>1 USDT = {} UAH</code>\nFunPay rate: <code>1 USDT = {} RUB</code>\n\nTo change the UAH rate, send:\n<code>/UAH 43.5</code>"
+uah_rate_changed = "✅ UAH rate changed: <code>1 USDT = {} UAH</code>\n\nPurchases are calculated without commission. The /profile balance is calculated with the 6% withdrawal commission."
+uah_rate_error = "❌ Invalid rate. Example: <code>/UAH 43.5</code>"
+usdt_rate_info = "Current FunPay rate: <code>1 USDT = {} RUB</code>\n\nChange manually:\n<code>/usdt 80.521</code>\n\nUpdate from FunPay now:\n<code>/usdt auto</code>"
+usdt_rate_changed = "✅ FunPay rate changed: <code>1 USDT = {} RUB</code>"
+usdt_rate_updating = "Updating FunPay rate from the balance page..."
+usdt_rate_auto_changed = "✅ FunPay rate updated from the site: <code>1 USDT = {} RUB</code>"
+usdt_rate_auto_error = "❌ Failed to update the rate from FunPay. Kept the last saved rate."
+usdt_rate_error = "❌ Invalid rate. Example: <code>/usdt 80.521</code>"
 
 act_change_golden_key = "Enter golden_key"
 cookie_changed = "✅ golden_key successfully changed{}.\n"
@@ -434,29 +456,42 @@ desc_au = "Here you can configure authorization in the Telegram control panel."
 desc_proxy = "Here you can set up the proxy."
 
 # - Commands desc
-cmd_menu = "Настройки"
+cmd_menu = "Settings"
 cmd_language = "change language"
-cmd_profile = "Профиль"
-cmd_help = "Помощь"
+cmd_profile = "Profile"
+cmd_help = "Help"
 cmd_test_lot = "create one-time delivery key"
 cmd_ban = "add user to the blacklist"
 cmd_unban = "delete user from blacklist"
 cmd_black_list = "blacklist"
 cmd_logs = "download current log-file"
 cmd_restart = "Restart"
-hidden_commands_help = """<b>Скрытые команды:</b>
+cmd_old = "List #"
+hidden_commands_help = """<b>Hidden commands:</b>
 
-/restart - перезапустить бота
-/logs - загрузить текущий лог-файл
-/del_logs - удалить старые лог-файлы
-/gkey - изменить golden_key
-/UAH 43.5 - изменить курс UAH
-/usdt 80.521 - изменить курс FunPay
-/update - обновить версию
-/ban - добавить пользователя в ЧС
-/unban - удалить пользователя из ЧС
-/black_list - показать черный список
-/test_lot - создать ключ выдачи"""
+/restart - restart the bot
+/logs - download the current log file
+/del_logs - delete old log files
+/gkey - change golden_key
+/UAH 43.5 - change UAH rate
+/usdt 80.521 - change FunPay rate
+/update - update version
+/old - List #
+/ban - add user to blacklist
+/unban - remove user from blacklist
+/black_list - show blacklist
+/test_lot - create delivery key"""
+
+callback_access_denied = "Access denied."
+logfile_last_error = "<b>Last error text:</b>\n\n{}"
+logfile_no_errors = "<b>No errors found in the latest log file.</b>"
+logfile_no_old_logs = "No old logs found."
+logfile_old_deleted = "✅ Deleted old log files: <code>{}</code>"
+update_disabled_manual = "Updates are disabled. Update the script manually when you decide to."
+update_downloading = "Downloading update from felusium/FunPayCardinal_Remake..."
+update_failed = "❌ Failed to update: <code>{}</code>"
+update_success_restart = "✅ {}\n\nRestart the bot with /restart."
+lang_warning_uk = "The translation was prepared with ChatGPT."
 
 # - Variables desc
 v_edit_greeting_text = "Enter the text of the welcome message."

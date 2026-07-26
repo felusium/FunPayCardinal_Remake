@@ -646,10 +646,90 @@ class Account:
         parser = BeautifulSoup(response.content.decode(), "lxml")
         self.__update_csrf_token(parser)
 
+        def normalize_float(value) -> float | None:
+            if isinstance(value, (int, float)):
+                result = float(value)
+                return result if result > 0 else None
+            if not isinstance(value, str):
+                return None
+            match = re.search(r"\d+(?:[.,]\d+)?", value.replace(" ", ""))
+            if not match:
+                return None
+            result = float(match.group(0).replace(",", "."))
+            return result if result > 0 else None
+
+        def find_rate_in_obj(obj, usdt_context: bool = False) -> float | None:
+            if isinstance(obj, dict):
+                local_context = usdt_context or any(
+                    "usdt" in str(value).lower() or "trc" in str(value).lower()
+                    for value in obj.values()
+                    if isinstance(value, str)
+                )
+                for key, value in obj.items():
+                    key_lower = str(key).lower()
+                    if local_context and any(word in key_lower for word in ("rate", "course", "kurs", "курс")):
+                        rate = normalize_float(value)
+                        if rate:
+                            return rate
+                    found = find_rate_in_obj(value, local_context)
+                    if found:
+                        return found
+            elif isinstance(obj, list):
+                for item in obj:
+                    found = find_rate_in_obj(item, usdt_context)
+                    if found:
+                        return found
+            elif isinstance(obj, str) and usdt_context:
+                match = re.search(r"(?:курс|rate|course)\D{0,20}(\d+(?:[.,]\d+)?)", obj, re.IGNORECASE)
+                if match:
+                    return float(match.group(1).replace(",", "."))
+            return None
+
+        def get_withdraw_data() -> dict | None:
+            withdraw_box = parser.find("div", {"class": "withdraw-box"})
+            if not withdraw_box or not withdraw_box.get("data-data"):
+                return None
+            try:
+                return json.loads(html.unescape(withdraw_box["data-data"]))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                return None
+
+        data_data = get_withdraw_data()
+        if data_data:
+            for candidate in (
+                    data_data.get("extCurrencies", {}).get("usdt_trc"),
+                    data_data.get("extCurrencies", {}).get("trc"),
+                    data_data.get("currencies", {}).get("rub"),
+                    data_data):
+                rate = find_rate_in_obj(candidate)
+                if rate:
+                    return rate
+
+            usdt_wallets = data_data.get("extCurrencies", {}).get("usdt_trc", {}).get("wallets") or []
+            if usdt_wallets:
+                headers = {
+                    "accept": "*/*",
+                    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "x-requested-with": "XMLHttpRequest"
+                }
+                amount_int = 10000
+                payload = {
+                    "csrf_token": self.csrf_token,
+                    "preview": "1",
+                    "currency_id": "rub",
+                    "ext_currency_id": "usdt_trc",
+                    "wallet": usdt_wallets[0],
+                    "amount_int": amount_int
+                }
+                preview = self.method("post", "withdraw/withdraw", headers, payload, raise_not_200=True).json()
+                amount_ext = normalize_float(preview.get("amount_ext"))
+                if amount_ext:
+                    return amount_int * 0.94 / amount_ext
+
         text = parser.get_text("\n", strip=True)
         patterns = (
-            r"USDT\s*TRC20[\s\S]{0,300}?(?:курс|rate)\s*([\d.,]+)",
-            r"(?:курс|rate)\s*([\d.,]+)",
+            r"USDT\s*TRC20[\s\S]{0,500}?(?:курс|rate|course)\D{0,20}(\d+(?:[.,]\d+)?)",
+            r"(?:курс|rate|course)\D{0,20}(\d+(?:[.,]\d+)?)",
         )
         for pattern in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
@@ -658,6 +738,125 @@ class Account:
             return float(match.group(1).replace(",", "."))
 
         raise Exception("Не удалось найти курс USDT TRC20 на странице баланса.")
+
+    def get_withdraw_data(self) -> dict:
+        """
+        Получает данные формы вывода со страницы баланса.
+
+        :return: данные из withdraw-box[data-data].
+        :rtype: :obj:`dict`
+        """
+        if not self.is_initiated:
+            raise exceptions.AccountNotInitiatedError()
+
+        response = self.method("get", "account/balance", {"accept": "*/*"}, {}, raise_not_200=True)
+        parser = BeautifulSoup(response.content.decode(), "lxml")
+        self.__update_csrf_token(parser)
+        withdraw_box = parser.find("div", {"class": "withdraw-box"})
+        if not withdraw_box or not withdraw_box.get("data-data"):
+            raise Exception("Не удалось получить данные формы вывода.")
+        return json.loads(html.unescape(withdraw_box["data-data"]))
+
+    def get_withdraw_wallets(self, currency_id: str = "rub") -> list[dict[str, str]]:
+        """
+        Получает сохраненные на FunPay кошельки для вывода.
+
+        :param currency_id: внутренняя валюта FunPay для вывода.
+        :type currency_id: :obj:`str`
+
+        :return: список кошельков.
+        :rtype: :obj:`list` of :obj:`dict`
+        """
+        try:
+            saved_wallets = self.get_wallets()
+            saved_values = {wallet.data for wallet in saved_wallets}
+        except Exception:
+            saved_values = set()
+
+        data = self.get_withdraw_data()
+        currency = data.get("currencies", {}).get(currency_id, {})
+        channels = currency.get("channels") or []
+        ext_currencies = data.get("extCurrencies", {})
+        result = []
+        for channel in channels:
+            ext_currency_id = channel.get("extCurrency")
+            if not ext_currency_id or ext_currency_id not in ext_currencies:
+                continue
+            ext_currency = ext_currencies[ext_currency_id]
+            wallets = ext_currency.get("wallets") or []
+            for wallet in wallets:
+                wallet = str(wallet)
+                if saved_values and wallet not in saved_values:
+                    continue
+                result.append({
+                    "currency_id": currency_id,
+                    "currency_name": currency.get("unit", currency_id.upper()),
+                    "ext_currency_id": ext_currency_id,
+                    "ext_currency_name": ext_currency.get("name", channel.get("name", ext_currency_id)),
+                    "wallet": wallet
+                })
+        return result
+
+    def calc_withdraw(self, currency_id: str, ext_currency_id: str, wallet: str, amount_int: int | float) -> float:
+        """
+        Предварительно рассчитывает сумму к получению при выводе.
+        """
+        if not self.is_initiated:
+            raise exceptions.AccountNotInitiatedError()
+
+        headers = {
+            "accept": "*/*",
+            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "x-requested-with": "XMLHttpRequest"
+        }
+        payload = {
+            "csrf_token": self.csrf_token,
+            "preview": "1",
+            "currency_id": currency_id,
+            "ext_currency_id": ext_currency_id,
+            "wallet": wallet,
+            "amount_int": str(amount_int)
+        }
+        response = self.method("post", "withdraw/withdraw", headers, payload, raise_not_200=True)
+        json_response = response.json()
+        if json_response.get("error"):
+            raise exceptions.WithdrawError(response, json_response.get("msg"))
+        return float(str(json_response.get("amount_ext")).replace(",", "."))
+
+    def withdraw_by_ids(self, currency_id: str, ext_currency_id: str, wallet: str, amount_ext: int | float,
+                        confirmation_code: str | None = None) -> float:
+        """
+        Подтверждает вывод на сохраненный кошелек FunPay.
+        """
+        if not self.is_initiated:
+            raise exceptions.AccountNotInitiatedError()
+
+        headers = {
+            "accept": "*/*",
+            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "x-requested-with": "XMLHttpRequest"
+        }
+        payload = {
+            "csrf_token": self.csrf_token,
+            "preview": "",
+            "currency_id": currency_id,
+            "ext_currency_id": ext_currency_id,
+            "wallet": wallet,
+            "amount_ext": str(amount_ext)
+        }
+        if confirmation_code:
+            payload.update({
+                "code": confirmation_code,
+                "otp": confirmation_code,
+                "totp": confirmation_code,
+                "two_factor_code": confirmation_code,
+                "confirmation_code": confirmation_code
+            })
+        response = self.method("post", "withdraw/withdraw", headers, payload, raise_not_200=True)
+        json_response = response.json()
+        if json_response.get("error"):
+            raise exceptions.WithdrawError(response, json_response.get("msg"))
+        return float(str(json_response.get("amount_int")).replace(",", "."))
 
     def get_chat_history(self, chat_id: int | str, last_message_id: int | None = None,
                          interlocutor_username: Optional[str] = None, from_id: int = 0) -> list[types.Message]:

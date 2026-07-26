@@ -700,3 +700,29 @@ Callback для закрепления плагина в списке плаги
 UUID: str - UUID плагина.
 offset: int - смещение списка плагинов.
 """
+
+WITHDRAW_MENU = "74"
+"""
+Callback для открытия ручного вывода средств.
+"""
+
+WITHDRAW_WALLET = "75"
+"""
+Callback для выбора кошелька вывода.
+Использование: CBT.WITHDRAW_WALLET:wallet_index
+"""
+
+WITHDRAW_CONFIRM = "76"
+"""
+Callback для подтверждения ручного вывода.
+"""
+
+WITHDRAW_2FA = "77"
+"""
+User-state: ожидается код двухэтапного подтверждения вывода.
+"""
+
+WITHDRAW_AMOUNT = "78"
+"""
+User-state: ожидается сумма ручного вывода.
+"""
