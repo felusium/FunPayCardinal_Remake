@@ -6,6 +6,7 @@ from configparser import ConfigParser
 DEFAULT_DISPLAY_CURRENCY = "UAH"
 DEFAULT_UAH_RATE = 43.5
 DEFAULT_FUNPAY_RUB_TO_USD_RATE = 80.521
+DEFAULT_FUNPAY_UAH_RUB_RATE = 0.543
 DEFAULT_WITHDRAW_COMMISSION_PERCENT = 0.0
 
 
@@ -33,6 +34,17 @@ def get_funpay_rub_to_usd_rate(config: ConfigParser | None) -> float:
     return _get_positive_float(config, "funpayRubToUsdRate", DEFAULT_FUNPAY_RUB_TO_USD_RATE)
 
 
+def get_funpay_uah_rub_rate(config: ConfigParser | None) -> float:
+    direct_rate = _get_positive_float(config, "funpayUahRubRate", 0)
+    if 0 < direct_rate <= 5:
+        return direct_rate
+
+    legacy_rate = get_uah_rate(config) / get_funpay_rub_to_usd_rate(config)
+    if 0 < legacy_rate <= 5:
+        return legacy_rate
+    return DEFAULT_FUNPAY_UAH_RUB_RATE
+
+
 def get_withdraw_commission_percent(config: ConfigParser | None) -> float:
     return DEFAULT_WITHDRAW_COMMISSION_PERCENT
 
@@ -42,6 +54,13 @@ def format_amount(amount: int | float) -> str:
     if value.is_integer():
         return str(int(value))
     return f"{value:.2f}".rstrip("0").rstrip(".")
+
+
+def format_rate(rate: int | float) -> str:
+    value = round(float(rate), 6)
+    if value.is_integer():
+        return str(int(value))
+    return f"{value:.6f}".rstrip("0").rstrip(".")
 
 
 def is_rub(currency) -> bool:
@@ -55,8 +74,14 @@ def is_usd(currency) -> bool:
 def rub_to_uah(amount: int | float, config: ConfigParser | None = None,
                include_withdraw_commission: bool = False) -> float:
     rub_amount = float(amount)
-    usdt_amount = rub_amount / get_funpay_rub_to_usd_rate(config)
-    return usdt_amount * get_uah_rate(config)
+    return rub_amount * get_funpay_uah_rub_rate(config)
+
+
+def uah_to_rub(amount: int | float, config: ConfigParser | None = None) -> float:
+    rate = get_funpay_uah_rub_rate(config)
+    if rate <= 0:
+        return float(amount)
+    return float(amount) / rate
 
 
 def format_money(amount: int | float, money_currency, config: ConfigParser | None = None,

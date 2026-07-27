@@ -304,22 +304,22 @@ class Cardinal(object):
         """
         while attempts:
             try:
-                rate = self.account.get_usdt_withdraw_rate()
+                rate = self.account.get_uah_card_withdraw_rate()
                 if not self.MAIN_CFG.has_section("DisplayCurrency"):
                     self.MAIN_CFG.add_section("DisplayCurrency")
-                self.MAIN_CFG.set("DisplayCurrency", "funpayRubToUsdRate", currency.format_amount(rate))
+                self.MAIN_CFG.set("DisplayCurrency", "funpayUahRubRate", currency.format_rate(rate))
                 self.MAIN_CFG.set("DisplayCurrency", "funpayRateUpdatedAt", str(int(time.time())))
                 self.save_config(self.MAIN_CFG, "configs/_main.cfg")
-                logger.info(f"Оновив внутрішній курс FunPay: {currency.format_amount(rate)}.")
+                logger.info(f"Оновив курс FunPay UAH/RUB: {currency.format_rate(rate)}.")
                 return True
             except:
                 attempts -= 1
-                logger.warning("Не вдалося оновити курс FunPay зі сторінки балансу.")
+                logger.warning("Не вдалося оновити курс FunPay UAH/RUB зі сторінки балансу.")
                 logger.debug("TRACEBACK", exc_info=True)
                 if attempts:
                     time.sleep(2)
         logger.warning(
-            f"Використовую збережений внутрішній курс FunPay: {currency.format_amount(currency.get_funpay_rub_to_usd_rate(self.MAIN_CFG))}."
+            f"Використовую збережений курс FunPay UAH/RUB: {currency.format_rate(currency.get_funpay_uah_rub_rate(self.MAIN_CFG))}."
         )
         return False
 

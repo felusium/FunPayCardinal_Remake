@@ -739,6 +739,100 @@ class Account:
 
         raise Exception("Не удалось найти курс USDT TRC20 на странице баланса.")
 
+    def get_uah_card_withdraw_rate(self) -> float:
+        """
+        Получает курс вывода RUB -> UAH через банковскую карту UA со страницы баланса.
+
+        :return: курс UAH за 1 RUB.
+        :rtype: :obj:`float`
+        """
+        if not self.is_initiated:
+            raise exceptions.AccountNotInitiatedError()
+
+        response = self.method("get", "account/balance", {"accept": "*/*"}, {}, raise_not_200=True)
+        parser = BeautifulSoup(response.content.decode(), "lxml")
+        self.__update_csrf_token(parser)
+
+        def normalize_float(value) -> float | None:
+            if isinstance(value, (int, float)):
+                result = float(value)
+                return result if 0 < result <= 5 else None
+            if not isinstance(value, str):
+                return None
+            match = re.search(r"0?[.,]\d{1,6}", value.replace(" ", ""))
+            if not match:
+                return None
+            result = float(match.group(0).replace(",", "."))
+            return result if 0 < result <= 5 else None
+
+        def has_uah_card_context(values) -> bool:
+            text = " ".join(str(value).lower() for value in values if isinstance(value, str))
+            return (
+                ("ua" in text or "uah" in text or "грн" in text or "укра" in text) and
+                ("card" in text or "карт" in text or "банків" in text or "банков" in text)
+            )
+
+        def find_rate_in_obj(obj, uah_context: bool = False) -> float | None:
+            if isinstance(obj, dict):
+                local_context = uah_context or has_uah_card_context(obj.values())
+                for key, value in obj.items():
+                    key_lower = str(key).lower()
+                    if local_context and any(word in key_lower for word in ("rate", "course", "kurs", "курс")):
+                        rate = normalize_float(value)
+                        if rate:
+                            return rate
+                    found = find_rate_in_obj(value, local_context)
+                    if found:
+                        return found
+            elif isinstance(obj, list):
+                for item in obj:
+                    found = find_rate_in_obj(item, uah_context)
+                    if found:
+                        return found
+            elif isinstance(obj, str) and uah_context:
+                match = re.search(r"(?:курс|rate|course)\D{0,20}(0?[.,]\d{1,6})", obj, re.IGNORECASE)
+                if match:
+                    return normalize_float(match.group(1))
+            return None
+
+        withdraw_box = parser.find("div", {"class": "withdraw-box"})
+        if withdraw_box and withdraw_box.get("data-data"):
+            try:
+                data_data = json.loads(html.unescape(withdraw_box["data-data"]))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                data_data = None
+            if data_data:
+                ext_currencies = data_data.get("extCurrencies", {})
+                preferred = []
+                for ext_id, ext_currency in ext_currencies.items():
+                    context_values = [ext_id]
+                    if isinstance(ext_currency, dict):
+                        context_values.extend(ext_currency.values())
+                    if has_uah_card_context(context_values):
+                        preferred.append(ext_currency)
+
+                for candidate in preferred + [data_data]:
+                    rate = find_rate_in_obj(candidate)
+                    if rate:
+                        return rate
+
+        text = parser.get_text("\n", strip=True)
+        patterns = (
+            r"(?:Банківська|Банковская|bank|card|карта)[\s\S]{0,220}(?:UA|UAH|Україн|Украин|грн)[\s\S]{0,500}?(?:курс|rate|course)\D{0,20}(0?[.,]\d{1,6})",
+            r"(?:UA|UAH|Україн|Украин|грн)[\s\S]{0,500}?(?:курс|rate|course)\D{0,20}(0?[.,]\d{1,6})",
+            r"(?:курс|rate|course)\D{0,20}(0?[.,]\d{1,6})[\s\S]{0,320}?(?:UA|UAH|Україн|Украин|грн|карт)",
+            r"(?:курс|rate|course)\D{0,20}(0?[.,]\d{1,6})",
+        )
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if not match:
+                continue
+            rate = normalize_float(match.group(1))
+            if rate:
+                return rate
+
+        raise Exception("Не удалось найти курс банковской карты UA на странице баланса.")
+
     def get_withdraw_data(self) -> dict:
         """
         Получает данные формы вывода со страницы баланса.

@@ -344,15 +344,15 @@ withdraw_2fa_required = "FunPay запросив код підтвердженн
 withdraw_failed = "❌ Не вдалося виконати вивід.\n\n<code>{}</code>"
 withdraw_success = "✅ Запит на вивід відправлено.\n\nСписано: <code>{} ₴</code>\nДо отримання: <code>{} ₴</code>\nВідправлено: <code>{}</code>"
 withdraw_cancelled = "Вивід скасовано."
-uah_rate_info = "Поточний курс: <code>1 USDT = {} UAH</code>\nВнутрішній курс FunPay: <code>{}</code>\n\nЩоб змінити UAH-курс, відправ:\n<code>/UAH 43.5</code>"
-uah_rate_changed = "✅ Курс UAH змінено: <code>1 USDT = {} UAH</code>\n\nПокупки, баланс і вивід рахуються прямим перерахунком у UAH."
-uah_rate_error = "❌ Неправильний курс. Приклад: <code>/UAH 43.5</code>"
-usdt_rate_info = "Поточний внутрішній курс FunPay: <code>{}</code>\n\nЗмінити вручну:\n<code>/usdt 80.521</code>\n\nОновити з FunPay зараз:\n<code>/usdt auto</code>"
-usdt_rate_changed = "✅ Внутрішній курс FunPay змінено: <code>{}</code>"
-usdt_rate_updating = "Оновлюю курс FunPay зі сторінки балансу..."
-usdt_rate_auto_changed = "✅ Внутрішній курс FunPay оновлено з сайту: <code>{}</code>"
+uah_rate_info = "Поточний курс FunPay: <code>1 ₽ = {} UAH</code>\n\nЩоб змінити вручну, відправ:\n<code>/UAH 0.543</code>\n\nОновити з FunPay зараз:\n<code>/UAH auto</code>"
+uah_rate_changed = "✅ Курс FunPay змінено: <code>1 ₽ = {} UAH</code>\n\nПокупки, баланс і вивід рахуються прямим перерахунком у UAH."
+uah_rate_error = "❌ Неправильний курс. Приклад: <code>/UAH 0.543</code>"
+usdt_rate_info = "Поточний курс FunPay: <code>1 ₽ = {} UAH</code>\n\nЗмінити вручну:\n<code>/usdt 0.543</code>\n\nОновити з FunPay зараз:\n<code>/usdt auto</code>"
+usdt_rate_changed = "✅ Курс FunPay змінено: <code>1 ₽ = {} UAH</code>"
+usdt_rate_updating = "Оновлюю курс FunPay з виводу на банківську карту UA..."
+usdt_rate_auto_changed = "✅ Курс FunPay оновлено з банківської карти UA: <code>1 ₽ = {} UAH</code>"
 usdt_rate_auto_error = "❌ Не вдалося оновити курс з FunPay. Залишив останній збережений курс."
-usdt_rate_error = "❌ Неправильний курс. Приклад: <code>/usdt 80.521</code>"
+usdt_rate_error = "❌ Неправильний курс. Приклад: <code>/usdt 0.543</code>"
 
 act_change_golden_key = "Введи golden_key"
 cookie_changed = "✅ golden_key успішно змінено{}.\n"
@@ -474,8 +474,8 @@ hidden_commands_help = """<b>Приховані команди:</b>
 /logs - завантажити поточний лог-файл
 /del_logs - видалити старі лог-файли
 /gkey - змінити golden_key
-/UAH 43.5 - змінити курс UAH
-/usdt 80.521 - змінити курс FunPay
+/UAH 0.543 - змінити курс FunPay UAH/RUB
+/usdt auto - оновити курс з виводу на карту UA
 /update - оновити версію
 /trash - фільтр зайвих повідомлень FunPay
 /old - Список #

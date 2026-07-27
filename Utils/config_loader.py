@@ -143,6 +143,7 @@ def load_main_config(config_path: str):
             "currency": ["UAH"],
             "uahRate": "any",
             "funpayRubToUsdRate": "any",
+            "funpayUahRubRate": "any",
             "funpayRateUpdatedAt": "any",
             "withdrawCommissionPercent": "any"
         },
@@ -159,6 +160,7 @@ def load_main_config(config_path: str):
             config.set("DisplayCurrency", "currency", "UAH")
             config.set("DisplayCurrency", "uahRate", "43.5")
             config.set("DisplayCurrency", "funpayRubToUsdRate", "80.521")
+            config.set("DisplayCurrency", "funpayUahRubRate", "0.543")
             config.set("DisplayCurrency", "funpayRateUpdatedAt", "0")
             config.set("DisplayCurrency", "withdrawCommissionPercent", "0")
             with open("configs/_main.cfg", "w", encoding="utf-8") as f:
@@ -269,6 +271,11 @@ def load_main_config(config_path: str):
             elif section_name == "DisplayCurrency" and param_name == "funpayRubToUsdRate" and \
                     param_name not in config[section_name]:
                 config.set("DisplayCurrency", "funpayRubToUsdRate", "80.521")
+                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
+                    config.write(f)
+            elif section_name == "DisplayCurrency" and param_name == "funpayUahRubRate" and \
+                    param_name not in config[section_name]:
+                config.set("DisplayCurrency", "funpayUahRubRate", "0.543")
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)
             elif section_name == "DisplayCurrency" and param_name == "funpayRateUpdatedAt" and \
