@@ -224,7 +224,8 @@ def old_send_new_msg_notification_handler(c: Cardinal, e: LastChatMessageChanged
     else:
         user = f"👤 {user}"
     text = f"<i><b>{user}: </b></i><code>{utils.escape(str(e.chat))}</code>"
-    Thread(target=c.telegram.send_notification, args=(text, None, utils.NotificationTypes.new_message),
+    kb = keyboards.reply(e.chat.id, e.chat.name, extend=True)
+    Thread(target=c.telegram.send_notification, args=(text, kb, utils.NotificationTypes.new_message),
            daemon=True).start()
 
 
@@ -310,7 +311,8 @@ def send_new_msg_notification_handler(c: Cardinal, e: NewMessageEvent) -> None:
         last_by_bot = i.message.by_bot
         last_by_vertex = i.message.by_vertex
         last_badge = i.message.badge
-    Thread(target=c.telegram.send_notification, args=(text, None, utils.NotificationTypes.new_message),
+    kb = keyboards.reply(chat_id, chat_name, extend=True)
+    Thread(target=c.telegram.send_notification, args=(text, kb, utils.NotificationTypes.new_message),
            daemon=True).start()
 
 

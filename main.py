@@ -94,20 +94,23 @@ def cleanup_runtime_cache():
                     pass
 
     logs_dir = os.path.abspath(os.path.join(root, "logs"))
-    active_log = os.path.join(logs_dir, "log.log")
     if not os.path.isdir(logs_dir):
         return
 
-    for file_name in os.listdir(logs_dir):
-        file_path = os.path.abspath(os.path.join(logs_dir, file_name))
-        if not file_path.startswith(logs_dir + os.sep):
-            continue
-        if file_path == active_log or not os.path.isfile(file_path):
-            continue
-        try:
-            os.remove(file_path)
-        except OSError:
-            pass
+    for current_root, dirs, files in os.walk(logs_dir, topdown=False):
+        for file_name in files:
+            file_path = os.path.abspath(os.path.join(current_root, file_name))
+            if not file_path.startswith(logs_dir + os.sep):
+                continue
+            try:
+                os.remove(file_path)
+            except OSError:
+                pass
+        if current_root != logs_dir:
+            try:
+                os.rmdir(current_root)
+            except OSError:
+                pass
 
 
 cleanup_runtime_cache()

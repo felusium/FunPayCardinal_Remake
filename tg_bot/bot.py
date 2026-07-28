@@ -17,9 +17,11 @@ import os
 import sys
 import time
 import re
+import io
 import random
 import secrets
 import string
+import zipfile
 import psutil
 import telebot
 from telebot.apihelper import ApiTelegramException
@@ -28,6 +30,7 @@ import logging
 from telebot.types import InlineKeyboardMarkup as K, InlineKeyboardButton as B, Message, CallbackQuery, BotCommand
 from tg_bot import utils, static_keyboards as skb, keyboards as kb, CBT
 from Utils import cardinal_tools, currency, updater, old_orders_tickets
+from Utils.logger import redact_sensitive
 from locales.localizer import Localizer
 
 logger = logging.getLogger("TGBot")
@@ -917,23 +920,34 @@ class TGBot:
         else:
             self.bot.send_message(m.chat.id, _("logfile_sending"))
             try:
-                with open("logs/log.log", "r", encoding="utf-8") as f:
-                    self.bot.send_document(m.chat.id, f,
-                                           caption=f'{_("gs_old_msg_mode").replace("{} ", "") if self.cardinal.old_mode_enabled else ""}')
-                    f.seek(0)
-                    file_content = f.read()
-                    if "TRACEBACK" in file_content:
-                        file_content, right = file_content.rsplit("TRACEBACK", 1)
-                        file_content = "\n[".join(file_content.rsplit("\n[", 2)[-2:])
-                        right = right.split("\n[", 1)[0]  # locale
-                        result = _("logfile_last_error",
-                                   f"[{utils.escape(file_content)}TRACEBACK{utils.escape(right)}")
-                        while result:
-                            text, result = result[:4096], result[4096:]
-                            self.bot.send_message(m.chat.id, text)
-                            time.sleep(0.5)
-                    else:
-                        self.bot.send_message(m.chat.id, _("logfile_no_errors"))
+                with open("logs/log.log", "r", encoding="utf-8", errors="replace") as f:
+                    file_content = redact_sensitive(f.read())
+
+                archive = io.BytesIO()
+                with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+                    zip_file.writestr("log.log", file_content)
+                archive.seek(0)
+                archive.name = "log.zip"
+                self.bot.send_document(
+                    m.chat.id,
+                    archive,
+                    visible_file_name="log.zip",
+                    caption=f'{_("gs_old_msg_mode").replace("{} ", "") if self.cardinal.old_mode_enabled else ""}',
+                    timeout=120
+                )
+
+                if "TRACEBACK" in file_content:
+                    traceback_left, traceback_right = file_content.rsplit("TRACEBACK", 1)
+                    traceback_left = "\n[".join(traceback_left.rsplit("\n[", 2)[-2:])
+                    traceback_right = traceback_right.split("\n[", 1)[0]  # locale
+                    result = _("logfile_last_error",
+                               f"[{utils.escape(traceback_left)}TRACEBACK{utils.escape(traceback_right)}")
+                    while result:
+                        text, result = result[:4096], result[4096:]
+                        self.bot.send_message(m.chat.id, text)
+                        time.sleep(0.5)
+                else:
+                    self.bot.send_message(m.chat.id, _("logfile_no_errors"))
             except:
                 logger.warning("Не вдалося відправити лог-файл")
                 logger.debug("TRACEBACK", exc_info=True)

@@ -571,11 +571,9 @@ def reply(node_id: int, username: str, again: bool = False, extend: bool = False
 
     :return: объект клавиатуры для отправки сообщения в чат FunPay.
     """
-    bts = [B(_("msg_reply2") if again else _("msg_reply"), None, f"{CBT.SEND_FP_MESSAGE}:{node_id}:{username}"),
-           B(_("msg_templates"), None, f"{CBT.TMPLT_LIST_ANS_MODE}:0:{node_id}:{username}:{int(again)}:{int(extend)}")]
+    bts = [B(_("msg_reply2") if again else _("msg_reply"), None, f"{CBT.SEND_FP_MESSAGE}:{node_id}:{username}")]
     if extend:
         bts.append(B(_("msg_more"), None, f"{CBT.EXTEND_CHAT}:{node_id}:{username}"))
-    bts.append(B(f"🌐 {username}", url=f"https://funpay.com/chat/?node={node_id}"))
     kb = K() \
         .row(*bts)
     return kb
