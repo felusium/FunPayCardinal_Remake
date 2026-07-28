@@ -175,7 +175,8 @@ def support_cookie_names(acc) -> list[str]:
     for cookie in getattr(acc.session, "cookies", []):
         domain = str(getattr(cookie, "domain", "") or "")
         if SUPPORT_HOST in domain:
-            names.append(cookie.name)
+            path = str(getattr(cookie, "path", "") or "/")
+            names.append(f"{cookie.name}@{domain}{path}")
     return sorted(set(names))
 
 
@@ -223,7 +224,8 @@ def persist_response_cookies(acc, response) -> None:
         path = cookie.path or "/"
         acc.session.cookies.set(cookie.name, cookie.value, domain=domain, path=path)
         if host == SUPPORT_HOST:
-            acc.session.cookies.set(cookie.name, cookie.value, domain=SUPPORT_HOST, path=path)
+            acc.session.cookies.set(cookie.name, cookie.value, domain=SUPPORT_HOST, path="/")
+            acc.session.cookies.set(cookie.name, cookie.value, domain=f".{SUPPORT_HOST}", path="/")
 
     set_cookie_header = response.headers.get("Set-Cookie")
     if not set_cookie_header:
@@ -239,7 +241,8 @@ def persist_response_cookies(acc, response) -> None:
         path = morsel["path"] or "/"
         acc.session.cookies.set(name, morsel.value, domain=domain, path=path)
         if host == SUPPORT_HOST:
-            acc.session.cookies.set(name, morsel.value, domain=SUPPORT_HOST, path=path)
+            acc.session.cookies.set(name, morsel.value, domain=SUPPORT_HOST, path="/")
+            acc.session.cookies.set(name, morsel.value, domain=f".{SUPPORT_HOST}", path="/")
 
 
 def support_request(acc, method: str, url: str, headers: dict | None = None,
