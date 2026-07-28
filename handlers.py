@@ -224,8 +224,7 @@ def old_send_new_msg_notification_handler(c: Cardinal, e: LastChatMessageChanged
     else:
         user = f"👤 {user}"
     text = f"<i><b>{user}: </b></i><code>{utils.escape(str(e.chat))}</code>"
-    kb = keyboards.reply(e.chat.id, e.chat.name, extend=True)
-    Thread(target=c.telegram.send_notification, args=(text, kb, utils.NotificationTypes.new_message),
+    Thread(target=c.telegram.send_notification, args=(text, None, utils.NotificationTypes.new_message),
            daemon=True).start()
 
 
@@ -311,8 +310,7 @@ def send_new_msg_notification_handler(c: Cardinal, e: NewMessageEvent) -> None:
         last_by_bot = i.message.by_bot
         last_by_vertex = i.message.by_vertex
         last_badge = i.message.badge
-    kb = keyboards.reply(chat_id, chat_name, extend=True)
-    Thread(target=c.telegram.send_notification, args=(text, kb, utils.NotificationTypes.new_message),
+    Thread(target=c.telegram.send_notification, args=(text, None, utils.NotificationTypes.new_message),
            daemon=True).start()
 
 
@@ -427,8 +425,7 @@ def send_command_notification_handler(c: Cardinal, e: NewMessageEvent | LastChat
     else:
         text = cardinal_tools.format_msg_text(c.AR_CFG[command]["notificationText"], obj)
 
-    Thread(target=c.telegram.send_notification, args=(text, keyboards.reply(chat_id, chat_name),
-                                                      utils.NotificationTypes.command), daemon=True).start()
+    Thread(target=c.telegram.send_notification, args=(text, None, utils.NotificationTypes.command), daemon=True).start()
 
 
 def test_auto_delivery_handler(c: Cardinal, e: NewMessageEvent | LastChatMessageChangedEvent):
@@ -586,8 +583,7 @@ def send_new_order_notification_handler(c: Cardinal, e: NewOrderEvent, *args):
         chat_id = chat.id
     else:
         chat_id = e.order.chat_id
-    keyboard = keyboards.new_order(e.order.id, e.order.buyer_username, chat_id)
-    Thread(target=c.telegram.send_notification, args=(text, keyboard, utils.NotificationTypes.new_order),
+    Thread(target=c.telegram.send_notification, args=(text, None, utils.NotificationTypes.new_order),
            daemon=True).start()
 
 
