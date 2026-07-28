@@ -1067,7 +1067,7 @@ class TGBot:
         state["last_error"] = ""
         old_orders_tickets.save_state(state)
         try:
-            ticket_url = old_orders_tickets.create_support_ticket(self.cardinal.account, orders)
+            old_orders_tickets.create_support_ticket(self.cardinal.account, orders)
         except Exception as exc:
             logger.warning("Не вдалося відправити тикет старих замовлень: %s", exc)
             logger.debug("TRACEBACK", exc_info=True)
@@ -1097,8 +1097,7 @@ class TGBot:
             f"Остання відправка: <code>{old_orders_tickets.format_dt(state['last_sent_at'])}</code>\n"
             f"Замовлень: <code>{len(orders)}</code>",
             c.message.chat.id,
-            c.message.id,
-            reply_markup=K().add(B("Відкрити тикет", url=ticket_url))
+            c.message.id
         )
 
     def about(self, m: Message):
