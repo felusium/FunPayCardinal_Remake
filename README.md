@@ -1,4 +1,4 @@
-# FunPay Cardinal Remake
+# FunPayCardinalRemake
 
 Модифікована збірка FunPayCardinalRemake для автоматизації роботи з FunPay.
 
