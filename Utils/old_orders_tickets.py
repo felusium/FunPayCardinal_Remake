@@ -125,6 +125,15 @@ def limit_text(value: str, limit: int = MAX_ERROR_DETAILS_LEN) -> str:
     return value[:limit - 3].rstrip() + "..."
 
 
+def redact_sensitive_text(value: str | None) -> str:
+    text = str(value or "")
+    text = re.sub(r"jwt=[^&\s]+", "jwt=<hidden>", text, flags=re.IGNORECASE)
+    text = re.sub(r"([?&](?:token|auth|key|signature|sig)=)[^&\s]+", r"\1<hidden>", text, flags=re.IGNORECASE)
+    text = re.sub(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", "<email>", text)
+    text = re.sub(r"\b[a-f0-9]{32,}\b", "<secret>", text, flags=re.IGNORECASE)
+    return text
+
+
 def response_visible_preview(response, limit: int = MAX_RESPONSE_PREVIEW_LEN) -> str:
     try:
         content = response.content or b""
@@ -135,19 +144,20 @@ def response_visible_preview(response, limit: int = MAX_RESPONSE_PREVIEW_LEN) ->
         except Exception:
             text = ""
     text = re.sub(r"\s+", " ", str(text or "")).strip()
-    return limit_text(text, limit) if text else "-"
+    return limit_text(redact_sensitive_text(text), limit) if text else "-"
 
 
 def response_details(response, reason: str, extra: list[str] | None = None) -> str:
+    location = response.headers.get("Location") or "-"
     lines = [
         reason,
         f"HTTP: {getattr(response, 'status_code', '-')}",
-        f"URL: {getattr(response, 'url', '-')}",
-        f"Location: {response.headers.get('Location') or '-'}",
+        f"URL: {redact_sensitive_text(getattr(response, 'url', '-'))}",
+        f"Location: {redact_sensitive_text(location)}",
         f"Content-Type: {response.headers.get('Content-Type') or '-'}"
     ]
     if extra:
-        lines.extend(extra)
+        lines.extend(redact_sensitive_text(item) for item in extra)
     lines.append(f"Ответ страницы: {response_visible_preview(response)}")
     return limit_text("\n".join(lines))
 
@@ -155,7 +165,7 @@ def response_details(response, reason: str, extra: list[str] | None = None) -> s
 def redirect_debug_lines(redirects: list[str]) -> list[str]:
     if not redirects:
         return []
-    return ["Редиректы:"] + [f"- {item}" for item in redirects[-8:]]
+    return ["Редиректы:"] + [f"- {redact_sensitive_text(item)}" for item in redirects[-8:]]
 
 
 def form_debug_lines(form, payload: dict, flags: dict[str, bool], submit_url: str, method: str) -> list[str]:
@@ -172,12 +182,19 @@ def form_debug_lines(form, payload: dict, flags: dict[str, bool], submit_url: st
     ]
 
 
-def get_support_cookies(acc) -> dict:
+def get_funpay_cookies(acc) -> dict:
     cookies = {"golden_key": acc.golden_key, "cookie_prefs": "1"}
     cookies.update(getattr(acc, "cookies", {}) or {})
     if getattr(acc, "phpsessid", None):
         cookies["PHPSESSID"] = acc.phpsessid
     return cookies
+
+
+def get_request_cookies(acc, url: str) -> dict | None:
+    parsed = urlparse(url)
+    if parsed.netloc.endswith("funpay.com") and not parsed.netloc.endswith("support.funpay.com"):
+        return get_funpay_cookies(acc)
+    return None
 
 
 def support_request(acc, method: str, url: str, headers: dict | None = None,
@@ -197,7 +214,7 @@ def support_request(acc, method: str, url: str, headers: dict | None = None,
         url=url,
         headers=req_headers,
         data=data or {},
-        cookies=get_support_cookies(acc),
+        cookies=get_request_cookies(acc, url),
         timeout=getattr(acc, "requests_timeout", 10),
         proxies=getattr(acc, "proxy", None) or {},
         allow_redirects=allow_redirects
