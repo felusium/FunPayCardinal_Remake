@@ -1710,7 +1710,11 @@ class TGBot:
         """
         Устанавливает меню команд.
         """
-        commands = [(command, self.commands[command]) for command in self.visible_commands if command in self.commands]
+        commands = [
+            (command, self.commands[command])
+            for command in self.visible_commands
+            if command in self.commands and re.fullmatch(r"[a-z0-9_]{1,32}", command)
+        ]
         for old_lang in ("ru", "en"):
             try:
                 self.bot.delete_my_commands(language_code=old_lang)

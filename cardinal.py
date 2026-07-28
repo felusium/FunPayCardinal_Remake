@@ -286,17 +286,25 @@ class Cardinal(object):
         self.telegram.init()
 
     def get_balance(self, attempts: int = 3) -> FunPayAPI.types.Balance:
-        subcategories = self.account.get_sorted_subcategories()[FunPayAPI.enums.SubCategoryTypes.COMMON]
-        lots = []
-        while not lots and attempts:
-            attempts -= 1
-            subcat_id = random.choice(list(subcategories.keys()))
-            lots = self.account.get_subcategory_public_lots(FunPayAPI.enums.SubCategoryTypes.COMMON, subcat_id)
-            break
-        else:
-            raise Exception(...)
-        balance = self.account.get_balance(random.choice(lots).id)
-        return balance
+        subcategories = self.account.get_sorted_subcategories().get(FunPayAPI.enums.SubCategoryTypes.COMMON, {})
+        subcategory_ids = list(subcategories.keys())
+        last_error = None
+        for _ in range(max(1, attempts)):
+            random.shuffle(subcategory_ids)
+            for subcat_id in subcategory_ids:
+                try:
+                    lots = self.account.get_subcategory_public_lots(FunPayAPI.enums.SubCategoryTypes.COMMON, subcat_id)
+                except Exception as exc:
+                    last_error = exc
+                    continue
+                if lots:
+                    return self.account.get_balance(random.choice(lots).id)
+            time.sleep(1)
+
+        logger.warning("Не вдалося отримати баланс через публічні лоти: FunPay не повернув жодного лота.")
+        if last_error:
+            logger.debug("Остання помилка при отриманні лотів для балансу: %s", last_error)
+        return FunPayAPI.types.Balance(0, 0, 0, 0, 0, 0)
 
     def update_funpay_withdraw_rate(self, attempts: int = 2) -> bool:
         """
@@ -778,6 +786,9 @@ class Cardinal(object):
 
         :param file: файл плагина.
         """
+        if file in ("telegram_gifts_login.py",):
+            logger.info("Служебный файл %s пропущен при загрузке плагинов.", file)
+            return False
         with open(f"plugins/{file}", "r", encoding="utf-8") as f:
             line = f.readline()
         if line.startswith("#"):
