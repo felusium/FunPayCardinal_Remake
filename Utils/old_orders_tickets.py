@@ -9,6 +9,7 @@ from datetime import datetime
 from http.cookies import SimpleCookie
 from urllib.parse import urljoin, urlparse
 
+import requests
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger("FPC.old_orders_tickets")
@@ -191,7 +192,7 @@ def support_ticket_cookie_debug_line(acc) -> str:
         domain = str(getattr(cookie, "domain", "") or "")
         path = str(getattr(cookie, "path", "") or "/")
         normalized_domain = domain.lstrip(".")
-        domain_ok = normalized_domain == SUPPORT_HOST or SUPPORT_HOST.endswith(f".{normalized_domain}")
+        domain_ok = normalized_domain == SUPPORT_HOST
         path_ok = "/tickets/new/1".startswith(path.rstrip("/") or "/")
         if domain_ok and path_ok:
             names.append(f"{cookie.name}(domain={domain}, path={path})")
@@ -244,6 +245,21 @@ def get_request_cookies(acc, url: str) -> dict | None:
     return None
 
 
+def get_support_session_cookies(acc, url: str) -> dict:
+    parsed = urlparse(url)
+    request_path = parsed.path or "/"
+    cookies = {}
+    for cookie in getattr(acc.session, "cookies", []):
+        domain = str(getattr(cookie, "domain", "") or "")
+        path = str(getattr(cookie, "path", "") or "/")
+        if domain.lstrip(".") != SUPPORT_HOST:
+            continue
+        if not request_path.startswith(path.rstrip("/") or "/"):
+            continue
+        cookies[cookie.name] = cookie.value
+    return cookies
+
+
 def persist_response_cookies(acc, response) -> None:
     host = urlparse(getattr(response, "url", "") or "").hostname
     if not host:
@@ -289,16 +305,22 @@ def support_request(acc, method: str, url: str, headers: dict | None = None,
         "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
     }
     req_headers.update(headers or {})
-    response = acc.session.request(
-        method=method,
-        url=url,
-        headers=req_headers,
-        data=data or {},
-        cookies=get_request_cookies(acc, url),
-        timeout=getattr(acc, "requests_timeout", 10),
-        proxies=getattr(acc, "proxy", None) or {},
-        allow_redirects=allow_redirects
-    )
+    parsed = urlparse(url)
+    request_kwargs = {
+        "method": method,
+        "url": url,
+        "headers": req_headers,
+        "data": data or {},
+        "timeout": getattr(acc, "requests_timeout", 10),
+        "proxies": getattr(acc, "proxy", None) or {},
+        "allow_redirects": allow_redirects
+    }
+    if parsed.netloc == SUPPORT_HOST:
+        request_kwargs["cookies"] = get_support_session_cookies(acc, url)
+        response = requests.request(**request_kwargs)
+    else:
+        request_kwargs["cookies"] = get_request_cookies(acc, url)
+        response = acc.session.request(**request_kwargs)
     persist_response_cookies(acc, response)
     return response
 
