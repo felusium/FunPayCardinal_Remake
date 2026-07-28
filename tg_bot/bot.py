@@ -18,6 +18,7 @@ import sys
 import time
 import re
 import random
+import secrets
 import string
 import psutil
 import telebot
@@ -26,7 +27,7 @@ import logging
 
 from telebot.types import InlineKeyboardMarkup as K, InlineKeyboardButton as B, Message, CallbackQuery, BotCommand
 from tg_bot import utils, static_keyboards as skb, keyboards as kb, CBT
-from Utils import cardinal_tools, currency, updater
+from Utils import cardinal_tools, currency, updater, old_orders_tickets
 from locales.localizer import Localizer
 
 logger = logging.getLogger("TGBot")
@@ -968,6 +969,136 @@ class TGBot:
         """
         self.bot.send_message(m.chat.id, _("hidden_commands_help"))
 
+    def support_ticket_keyboard(self) -> K:
+        return K() \
+            .add(B("Відправити заявку", url=old_orders_tickets.SUPPORT_NEW_TICKET_URL)) \
+            .add(B("Мої заявки", url=old_orders_tickets.SUPPORT_TICKETS_URL))
+
+    def confirm_ticket_orders_keyboard(self, token: str) -> K:
+        return K() \
+            .row(B("✅ Відправити тикет", callback_data=f"ticket_orders:confirm:{token}"),
+                 B("❌ Скасувати", callback_data=f"ticket_orders:cancel:{token}")) \
+            .add(B("Відкрити форму", url=old_orders_tickets.SUPPORT_NEW_TICKET_URL))
+
+    def send_ticket_orders(self, m: Message):
+        state = old_orders_tickets.load_state()
+        left = old_orders_tickets.cooldown_left(state)
+        if left:
+            self.bot.send_message(
+                m.chat.id,
+                "⏳ Тикет уже відправлявся недавно.\n"
+                f"Остання відправка: <code>{old_orders_tickets.format_dt(state.get('last_sent_at'))}</code>\n"
+                f"Повтор можна через: <code>{old_orders_tickets.format_left(left)}</code>",
+                reply_markup=self.support_ticket_keyboard()
+            )
+            return
+
+        msg = self.bot.send_message(m.chat.id, "Сканирую заказы (это может занять какое-то время)...")
+        try:
+            orders = old_orders_tickets.get_all_old_orders(self.cardinal.account)
+        except Exception as exc:
+            logger.warning("Не вдалося отримати старі замовлення для тикета.")
+            logger.debug("TRACEBACK", exc_info=True)
+            self.bot.edit_message_text(f"❌ Не вдалося отримати список замовлень.\n<code>{utils.escape(str(exc))}</code>",
+                                       msg.chat.id, msg.id)
+            return
+
+        if not orders:
+            self.bot.edit_message_text("❌ Прострочених замовлень немає.", msg.chat.id, msg.id)
+            return
+
+        token = secrets.token_hex(4)
+        state.setdefault("pending", {})[token] = {
+            "orders": orders,
+            "created_at": int(time.time()),
+            "chat_id": m.chat.id,
+            "user_id": m.from_user.id
+        }
+        old_orders_tickets.save_state(state)
+
+        order_field = ", ".join(orders)
+        self.bot.edit_message_text(
+            "<b>Готово до відправки тикета.</b>\n"
+            f"Замовлень: <code>{len(orders)}</code>\n"
+            f"Остання відправка: <code>{old_orders_tickets.format_dt(state.get('last_sent_at'))}</code>\n\n"
+            f"<b>Номер замовлення:</b>\n<code>{utils.escape(order_field)}</code>\n\n"
+            "Натисни підтвердження, якщо точно хочеш відправити це в підтримку.",
+            msg.chat.id,
+            msg.id,
+            reply_markup=self.confirm_ticket_orders_keyboard(token)
+        )
+        for chunk in old_orders_tickets.split_orders_text(orders, "\n"):
+            self.bot.send_message(msg.chat.id, f"<code>{utils.escape(chunk)}</code>")
+
+    def confirm_ticket_orders(self, c: CallbackQuery):
+        parts = (c.data or "").split(":")
+        if len(parts) != 3:
+            self.bot.answer_callback_query(c.id, "Некоректна заявка.", show_alert=True)
+            return
+        _, action, token = parts
+        state = old_orders_tickets.load_state()
+        pending = state.setdefault("pending", {}).get(token)
+        if not pending:
+            self.bot.answer_callback_query(c.id, "Заявка застаріла.", show_alert=True)
+            return
+        if int(pending.get("chat_id", 0) or 0) != c.message.chat.id or int(pending.get("user_id", 0) or 0) != c.from_user.id:
+            self.bot.answer_callback_query(c.id, "Це не твоя заявка.", show_alert=True)
+            return
+        if action == "cancel":
+            state["pending"].pop(token, None)
+            old_orders_tickets.save_state(state)
+            self.bot.edit_message_text("❌ Відправку тикета скасовано.", c.message.chat.id, c.message.id)
+            self.bot.answer_callback_query(c.id)
+            return
+        if action != "confirm":
+            self.bot.answer_callback_query(c.id, "Невідома дія.", show_alert=True)
+            return
+
+        left = old_orders_tickets.cooldown_left(state)
+        if left:
+            self.bot.answer_callback_query(c.id, f"Повтор можна через {old_orders_tickets.format_left(left)}.", show_alert=True)
+            return
+        self.bot.answer_callback_query(c.id)
+        self.bot.edit_message_text("Відправляю тикет у підтримку FunPay...", c.message.chat.id, c.message.id)
+        orders = pending.get("orders") or []
+        state["last_attempt_at"] = int(time.time())
+        state["last_error"] = ""
+        old_orders_tickets.save_state(state)
+        try:
+            ticket_url = old_orders_tickets.create_support_ticket(self.cardinal.account, orders)
+        except Exception as exc:
+            logger.warning("Не вдалося відправити тикет старих замовлень: %s", exc)
+            logger.debug("TRACEBACK", exc_info=True)
+            state = old_orders_tickets.load_state()
+            state["last_attempt_at"] = int(time.time())
+            state["last_error"] = str(exc)
+            old_orders_tickets.save_state(state)
+            error_text = old_orders_tickets.limit_text(str(exc), 2600)
+            self.bot.edit_message_text(
+                "❌ Не вдалося відправити тикет.\n"
+                "Після помилки бот не ставить паузу, можна виправити причину і повторити команду.\n\n"
+                f"<code>{utils.escape(error_text)}</code>",
+                c.message.chat.id,
+                c.message.id,
+                reply_markup=self.support_ticket_keyboard()
+            )
+            return
+
+        state["pending"].pop(token, None)
+        state["last_sent_at"] = int(time.time())
+        state["last_attempt_at"] = state["last_sent_at"]
+        state["last_error"] = ""
+        state["last_orders"] = orders
+        old_orders_tickets.save_state(state)
+        self.bot.edit_message_text(
+            "✅ Тикет відправлено.\n"
+            f"Остання відправка: <code>{old_orders_tickets.format_dt(state['last_sent_at'])}</code>\n"
+            f"Замовлень: <code>{len(orders)}</code>",
+            c.message.chat.id,
+            c.message.id,
+            reply_markup=K().add(B("Відкрити тикет", url=ticket_url))
+        )
+
     def about(self, m: Message):
         """
         Отправляет информацию о текущей версии бота.
@@ -1480,6 +1611,7 @@ class TGBot:
         self.msg_handler(self.send_logs, commands=["logs"])
         self.msg_handler(self.del_logs, commands=["del_logs"])
         self.msg_handler(self.send_help, commands=["help"])
+        self.msg_handler(self.send_ticket_orders, commands=["ticket_orders"])
         self.msg_handler(self.update, commands=["update"])
         self.msg_handler(self.restart_cardinal, commands=["restart"])
         self.cbq_handler(self.send_review_reply_text, lambda c: c.data.startswith(f"{CBT.SEND_REVIEW_REPLY_TEXT}:"))
@@ -1487,6 +1619,7 @@ class TGBot:
         self.cbq_handler(self.act_send_funpay_message, lambda c: c.data.startswith(f"{CBT.SEND_FP_MESSAGE}:"))
         self.cbq_handler(self.open_reply_menu, lambda c: c.data.startswith(f"{CBT.BACK_TO_REPLY_KB}:"))
         self.cbq_handler(self.extend_new_message_notification, lambda c: c.data.startswith(f"{CBT.EXTEND_CHAT}:"))
+        self.cbq_handler(self.confirm_ticket_orders, lambda c: str(c.data or "").startswith("ticket_orders:"))
         self.msg_handler(self.send_funpay_message,
                          func=lambda m: self.check_state(m.chat.id, m.from_user.id, CBT.SEND_FP_MESSAGE))
         self.cbq_handler(self.ask_confirm_refund, lambda c: c.data.startswith(f"{CBT.REQUEST_REFUND}:"))
