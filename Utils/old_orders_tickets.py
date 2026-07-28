@@ -6,11 +6,9 @@ import os
 import re
 import time
 from datetime import datetime
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
-
-from tg_bot import utils
 
 logger = logging.getLogger("FPC.old_orders_tickets")
 
@@ -20,6 +18,8 @@ STATE_FILE = "storage/cache/ticket_orders_state.json"
 TICKET_COOLDOWN_SECONDS = 24 * 60 * 60
 MAX_ERROR_DETAILS_LEN = 3200
 MAX_RESPONSE_PREVIEW_LEN = 900
+MAX_SUPPORT_REDIRECTS = 8
+MAX_429_RETRIES = 4
 
 
 def load_state() -> dict:
@@ -114,10 +114,6 @@ def get_all_old_orders(acc) -> list[str]:
     return old_orders
 
 
-def split_orders_text(orders: list[str], separator: str) -> list[str]:
-    return utils.split_by_limit([separator.join(orders)], limit=4096 - len("<code></code>"))
-
-
 def normalize_text(value: str | None) -> str:
     return " ".join(str(value or "").casefold().split())
 
@@ -154,6 +150,12 @@ def response_details(response, reason: str, extra: list[str] | None = None) -> s
         lines.extend(extra)
     lines.append(f"Ответ страницы: {response_visible_preview(response)}")
     return limit_text("\n".join(lines))
+
+
+def redirect_debug_lines(redirects: list[str]) -> list[str]:
+    if not redirects:
+        return []
+    return ["Редиректы:"] + [f"- {item}" for item in redirects[-8:]]
 
 
 def form_debug_lines(form, payload: dict, flags: dict[str, bool], submit_url: str, method: str) -> list[str]:
@@ -200,6 +202,64 @@ def support_request(acc, method: str, url: str, headers: dict | None = None,
         proxies=getattr(acc, "proxy", None) or {},
         allow_redirects=allow_redirects
     )
+
+
+def request_with_429_backoff(acc, method: str, url: str, headers: dict | None = None,
+                             data: dict | None = None, allow_redirects: bool = False):
+    response = None
+    for attempt in range(MAX_429_RETRIES):
+        response = support_request(acc, method, url, headers, data, allow_redirects)
+        if response.status_code != 429:
+            return response
+        if attempt + 1 < MAX_429_RETRIES:
+            time.sleep(min(2 ** attempt, 8))
+    return response
+
+
+def same_site_referer(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.netloc.endswith("support.funpay.com"):
+        return SUPPORT_TICKETS_URL
+    return "https://funpay.com/"
+
+
+def follow_support_redirects(acc, url: str) -> tuple[object, list[str]]:
+    current_url = url
+    redirects = []
+    for _ in range(MAX_SUPPORT_REDIRECTS):
+        response = request_with_429_backoff(
+            acc,
+            "get",
+            current_url,
+            {
+                "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "referer": same_site_referer(current_url)
+            }
+        )
+        if response.status_code == 429:
+            return response, redirects
+        location = response.headers.get("Location", "")
+        if not (300 <= response.status_code < 400) or not location:
+            return response, redirects
+        next_url = urljoin(current_url, location)
+        redirects.append(f"{response.status_code}: {current_url} -> {next_url}")
+        current_url = next_url
+    return response, redirects + [f"Остановлено: слишком много редиректов после {current_url}"]
+
+
+def open_support_ticket_form(acc) -> tuple[object, list[str]]:
+    response, redirects = follow_support_redirects(acc, SUPPORT_NEW_TICKET_URL)
+    if response.status_code == 429 and "/support/sso" in response.url:
+        try:
+            acc.get(update_phpsessid=True)
+            redirects.append("Обновлен PHPSESSID через FunPay, повтор открытия формы поддержки.")
+        except Exception as exc:
+            redirects.append(f"Не удалось обновить PHPSESSID перед повтором: {type(exc).__name__}: {exc}")
+        time.sleep(2)
+        retry_response, retry_redirects = follow_support_redirects(acc, SUPPORT_NEW_TICKET_URL)
+        redirects.extend(retry_redirects)
+        response = retry_response
+    return response, redirects
 
 
 def extract_form_payload(form) -> dict:
@@ -296,18 +356,19 @@ def choose_select_option(form, payload: dict, option_parts: list[str]) -> bool:
 def create_support_ticket(acc, orders: list[str]) -> str:
     order_field = ", ".join(orders)
     orders_body = "\n".join(orders)
-    response = support_request(acc, "get", SUPPORT_NEW_TICKET_URL, {"accept": "text/html"}, allow_redirects=True)
+    response, redirects = open_support_ticket_form(acc)
+    redirect_debug = redirect_debug_lines(redirects)
     if "account/login" in response.url:
-        raise RuntimeError(response_details(response, "FunPay отправил на страницу входа. Обнови golden_key/PHPSESSID."))
+        raise RuntimeError(response_details(response, "FunPay отправил на страницу входа. Обнови golden_key/PHPSESSID.", redirect_debug))
     if response.status_code == 429:
-        raise RuntimeError(response_details(response, "support.funpay.com вернул HTTP 429. Это лимит сайта поддержки, бот паузу не ставит."))
+        raise RuntimeError(response_details(response, "Не удалось открыть форму поддержки: SSO/FunPay вернул HTTP 429. Бот уже попробовал открыть именно support.funpay.com/tickets/new/1 и обновить PHPSESSID.", redirect_debug))
     if response.status_code != 200:
-        raise RuntimeError(response_details(response, "Не удалось открыть форму поддержки."))
+        raise RuntimeError(response_details(response, "Не удалось открыть форму поддержки.", redirect_debug))
 
     parser = BeautifulSoup(response.content.decode(errors="ignore"), "lxml")
     form = parser.find("form")
     if form is None:
-        raise RuntimeError(response_details(response, "Не удалось найти форму заявки на странице поддержки."))
+        raise RuntimeError(response_details(response, "Не удалось найти форму заявки на странице поддержки.", redirect_debug))
 
     payload = extract_form_payload(form)
     action = form.get("action") or SUPPORT_NEW_TICKET_URL

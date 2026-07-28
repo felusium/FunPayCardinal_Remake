@@ -1017,18 +1017,20 @@ class TGBot:
         old_orders_tickets.save_state(state)
 
         order_field = ", ".join(orders)
+        display_order_field = order_field
+        if len(display_order_field) > 1800:
+            display_order_field = display_order_field[:1800].rstrip(", ") + \
+                "\n...повний список замовлень буде відправлений у тикет."
         self.bot.edit_message_text(
             "<b>Готово до відправки тикета.</b>\n"
             f"Замовлень: <code>{len(orders)}</code>\n"
             f"Остання відправка: <code>{old_orders_tickets.format_dt(state.get('last_sent_at'))}</code>\n\n"
-            f"<b>Номер замовлення:</b>\n<code>{utils.escape(order_field)}</code>\n\n"
+            f"<b>Номер замовлення:</b>\n<code>{utils.escape(display_order_field)}</code>\n\n"
             "Натисни підтвердження, якщо точно хочеш відправити це в підтримку.",
             msg.chat.id,
             msg.id,
             reply_markup=self.confirm_ticket_orders_keyboard(token)
         )
-        for chunk in old_orders_tickets.split_orders_text(orders, "\n"):
-            self.bot.send_message(msg.chat.id, f"<code>{utils.escape(chunk)}</code>")
 
     def confirm_ticket_orders(self, c: CallbackQuery):
         parts = (c.data or "").split(":")
