@@ -176,13 +176,43 @@ def support_cookie_names(acc) -> list[str]:
         domain = str(getattr(cookie, "domain", "") or "")
         if SUPPORT_HOST in domain:
             path = str(getattr(cookie, "path", "") or "/")
-            names.append(f"{cookie.name}@{domain}{path}")
+            names.append(f"{cookie.name}(domain={domain}, path={path})")
     return sorted(set(names))
 
 
 def support_cookie_debug_line(acc) -> str:
     names = support_cookie_names(acc)
     return "Support cookies: " + (", ".join(names) if names else "-")
+
+
+def support_ticket_cookie_debug_line(acc) -> str:
+    names = []
+    for cookie in getattr(acc.session, "cookies", []):
+        domain = str(getattr(cookie, "domain", "") or "")
+        path = str(getattr(cookie, "path", "") or "/")
+        normalized_domain = domain.lstrip(".")
+        domain_ok = normalized_domain == SUPPORT_HOST or SUPPORT_HOST.endswith(f".{normalized_domain}")
+        path_ok = "/tickets/new/1".startswith(path.rstrip("/") or "/")
+        if domain_ok and path_ok:
+            names.append(f"{cookie.name}(domain={domain}, path={path})")
+    names = sorted(set(names))
+    return "Cookies for /tickets/new/1: " + (", ".join(names) if names else "-")
+
+
+def clear_support_cookies(acc, name: str | None = None) -> None:
+    jar = getattr(acc.session, "cookies", None)
+    if jar is None:
+        return
+    for cookie in list(jar):
+        domain = str(getattr(cookie, "domain", "") or "")
+        if SUPPORT_HOST not in domain:
+            continue
+        if name is not None and cookie.name != name:
+            continue
+        try:
+            jar.clear(cookie.domain, cookie.path, cookie.name)
+        except Exception:
+            pass
 
 
 def form_debug_lines(form, payload: dict, flags: dict[str, bool], submit_url: str, method: str) -> list[str]:
@@ -222,10 +252,11 @@ def persist_response_cookies(acc, response) -> None:
     for cookie in response.cookies:
         domain = cookie.domain or host
         path = cookie.path or "/"
-        acc.session.cookies.set(cookie.name, cookie.value, domain=domain, path=path)
         if host == SUPPORT_HOST:
+            clear_support_cookies(acc, cookie.name)
             acc.session.cookies.set(cookie.name, cookie.value, domain=SUPPORT_HOST, path="/")
-            acc.session.cookies.set(cookie.name, cookie.value, domain=f".{SUPPORT_HOST}", path="/")
+        else:
+            acc.session.cookies.set(cookie.name, cookie.value, domain=domain, path=path)
 
     set_cookie_header = response.headers.get("Set-Cookie")
     if not set_cookie_header:
@@ -239,10 +270,11 @@ def persist_response_cookies(acc, response) -> None:
     for name, morsel in parsed.items():
         domain = morsel["domain"] or host
         path = morsel["path"] or "/"
-        acc.session.cookies.set(name, morsel.value, domain=domain, path=path)
         if host == SUPPORT_HOST:
+            clear_support_cookies(acc, name)
             acc.session.cookies.set(name, morsel.value, domain=SUPPORT_HOST, path="/")
-            acc.session.cookies.set(name, morsel.value, domain=f".{SUPPORT_HOST}", path="/")
+        else:
+            acc.session.cookies.set(name, morsel.value, domain=domain, path=path)
 
 
 def support_request(acc, method: str, url: str, headers: dict | None = None,
@@ -316,16 +348,19 @@ def follow_support_redirects(acc, url: str) -> tuple[object, list[str]]:
         if base_next_url == SUPPORT_NEW_TICKET_URL and seen[base_next_url] >= 3:
             return response, redirects + [
                 "Остановлено: SSO-цикл вернул обратно на форму поддержки несколько раз.",
-                support_cookie_debug_line(acc)
+                support_cookie_debug_line(acc),
+                support_ticket_cookie_debug_line(acc)
             ]
         current_url = next_url
     return response, redirects + [
         f"Остановлено: слишком много редиректов после {current_url}",
-        support_cookie_debug_line(acc)
+        support_cookie_debug_line(acc),
+        support_ticket_cookie_debug_line(acc)
     ]
 
 
 def open_support_ticket_form(acc) -> tuple[object, list[str]]:
+    clear_support_cookies(acc)
     response, redirects = follow_support_redirects(acc, SUPPORT_NEW_TICKET_URL)
     if response.status_code == 429 and "/support/sso" in response.url:
         try:
@@ -338,6 +373,7 @@ def open_support_ticket_form(acc) -> tuple[object, list[str]]:
         redirects.extend(retry_redirects)
         response = retry_response
     redirects.append(support_cookie_debug_line(acc))
+    redirects.append(support_ticket_cookie_debug_line(acc))
     return response, redirects
 
 
