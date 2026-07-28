@@ -6,6 +6,7 @@ import os
 import re
 import time
 from datetime import datetime
+from http.cookies import SimpleCookie
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
@@ -20,6 +21,7 @@ MAX_ERROR_DETAILS_LEN = 3200
 MAX_RESPONSE_PREVIEW_LEN = 900
 MAX_SUPPORT_REDIRECTS = 8
 MAX_429_RETRIES = 4
+SUPPORT_HOST = "support.funpay.com"
 
 
 def load_state() -> dict:
@@ -168,6 +170,20 @@ def redirect_debug_lines(redirects: list[str]) -> list[str]:
     return ["Редиректы:"] + [f"- {redact_sensitive_text(item)}" for item in redirects[-8:]]
 
 
+def support_cookie_names(acc) -> list[str]:
+    names = []
+    for cookie in getattr(acc.session, "cookies", []):
+        domain = str(getattr(cookie, "domain", "") or "")
+        if SUPPORT_HOST in domain:
+            names.append(cookie.name)
+    return sorted(set(names))
+
+
+def support_cookie_debug_line(acc) -> str:
+    names = support_cookie_names(acc)
+    return "Support cookies: " + (", ".join(names) if names else "-")
+
+
 def form_debug_lines(form, payload: dict, flags: dict[str, bool], submit_url: str, method: str) -> list[str]:
     field_names = sorted(str(name) for name in payload)
     if len(field_names) > 35:
@@ -197,6 +213,35 @@ def get_request_cookies(acc, url: str) -> dict | None:
     return None
 
 
+def persist_response_cookies(acc, response) -> None:
+    host = urlparse(getattr(response, "url", "") or "").hostname
+    if not host:
+        return
+
+    for cookie in response.cookies:
+        domain = cookie.domain or host
+        path = cookie.path or "/"
+        acc.session.cookies.set(cookie.name, cookie.value, domain=domain, path=path)
+        if host == SUPPORT_HOST:
+            acc.session.cookies.set(cookie.name, cookie.value, domain=SUPPORT_HOST, path=path)
+
+    set_cookie_header = response.headers.get("Set-Cookie")
+    if not set_cookie_header:
+        return
+    try:
+        parsed = SimpleCookie()
+        parsed.load(set_cookie_header)
+    except Exception:
+        return
+
+    for name, morsel in parsed.items():
+        domain = morsel["domain"] or host
+        path = morsel["path"] or "/"
+        acc.session.cookies.set(name, morsel.value, domain=domain, path=path)
+        if host == SUPPORT_HOST:
+            acc.session.cookies.set(name, morsel.value, domain=SUPPORT_HOST, path=path)
+
+
 def support_request(acc, method: str, url: str, headers: dict | None = None,
                     data: dict | None = None, allow_redirects: bool = False):
     req_headers = {
@@ -209,7 +254,7 @@ def support_request(acc, method: str, url: str, headers: dict | None = None,
         "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
     }
     req_headers.update(headers or {})
-    return acc.session.request(
+    response = acc.session.request(
         method=method,
         url=url,
         headers=req_headers,
@@ -219,6 +264,8 @@ def support_request(acc, method: str, url: str, headers: dict | None = None,
         proxies=getattr(acc, "proxy", None) or {},
         allow_redirects=allow_redirects
     )
+    persist_response_cookies(acc, response)
+    return response
 
 
 def request_with_429_backoff(acc, method: str, url: str, headers: dict | None = None,
@@ -243,6 +290,7 @@ def same_site_referer(url: str) -> str:
 def follow_support_redirects(acc, url: str) -> tuple[object, list[str]]:
     current_url = url
     redirects = []
+    seen = {}
     for _ in range(MAX_SUPPORT_REDIRECTS):
         response = request_with_429_backoff(
             acc,
@@ -260,8 +308,18 @@ def follow_support_redirects(acc, url: str) -> tuple[object, list[str]]:
             return response, redirects
         next_url = urljoin(current_url, location)
         redirects.append(f"{response.status_code}: {current_url} -> {next_url}")
+        base_next_url = next_url.split("?", 1)[0]
+        seen[base_next_url] = seen.get(base_next_url, 0) + 1
+        if base_next_url == SUPPORT_NEW_TICKET_URL and seen[base_next_url] >= 3:
+            return response, redirects + [
+                "Остановлено: SSO-цикл вернул обратно на форму поддержки несколько раз.",
+                support_cookie_debug_line(acc)
+            ]
         current_url = next_url
-    return response, redirects + [f"Остановлено: слишком много редиректов после {current_url}"]
+    return response, redirects + [
+        f"Остановлено: слишком много редиректов после {current_url}",
+        support_cookie_debug_line(acc)
+    ]
 
 
 def open_support_ticket_form(acc) -> tuple[object, list[str]]:
@@ -276,6 +334,7 @@ def open_support_ticket_form(acc) -> tuple[object, list[str]]:
         retry_response, retry_redirects = follow_support_redirects(acc, SUPPORT_NEW_TICKET_URL)
         redirects.extend(retry_redirects)
         response = retry_response
+    redirects.append(support_cookie_debug_line(acc))
     return response, redirects
 
 
