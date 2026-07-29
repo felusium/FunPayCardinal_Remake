@@ -643,11 +643,12 @@ class Cardinal(object):
         """
         Запускает цикл обновления внутреннего курса FunPay.
         """
-        sleep_time = 21600
+        refresh_interval = 180 * 60
+        sleep_time = refresh_interval
         while True:
             time.sleep(sleep_time)
             result = self.update_funpay_withdraw_rate()
-            sleep_time = 21600 if result else 600
+            sleep_time = refresh_interval if result else 600
 
     # Управление процессом
     def init(self):
