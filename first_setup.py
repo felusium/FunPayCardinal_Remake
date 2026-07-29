@@ -76,12 +76,6 @@ default_config = {
         "star5ReplyText": "",
     },
 
-    "Proxy": {
-        "enable": "0",
-        "proxy": "",
-        "check": "0"
-    },
-
     "DisplayCurrency": {
         "currency": "UAH",
         "uahRate": "43.5",
@@ -255,18 +249,6 @@ def first_setup():
     config.set("Telegram", "enabled", "1")
     config.set("Telegram", "token", token)
     config.set("Telegram", "secretKeyHash", hash_password(password))
-
-    print(
-        f"\n{Fore.MAGENTA}{Style.BRIGHT}┌── {Fore.CYAN}" f"Якщо хочеш використовувати IPv4 проксі ДЛЯ ДОСТУПУ ДО FUNPAY"
-        f" – вкажи їх у форматі scheme://login:password@ip:port, login:password@ip:port або ip:port."
-        f" Якщо ти не знаєш, " f"що це таке або вони тобі не потрібні - просто натисни Enter. "
-        f"{Fore.RED}(* ^ ω ^){Style.RESET_ALL}")
-    proxy = input_proxy(set_telebot_proxy=True)
-
-    if proxy:
-        config.set("Proxy", "proxy", proxy)
-        config.set("Proxy", "enable", "1")
-        config.set("Proxy", "check", "1")
 
     print(f"\n{Fore.CYAN}{Style.BRIGHT}Готово! Зараз я збережу конфіг і завершу програму! "
           f"{Fore.RED}ʘ>ʘ{Style.RESET_ALL}")

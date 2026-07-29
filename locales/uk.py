@@ -31,7 +31,6 @@ mm_new_msg_view = "✉️ Вид спов. про нові повідомлен�
 mm_plugins = "🧩 Плагіни"
 mm_configs = "📁 Конфіги"
 mm_authorized_users = "👥 Авторизовані користувачі"
-mm_proxy = "🌐 Проксі"
 
 # Глобальні перемикачі
 gs_autoraise = "{} Автопідняття"
@@ -599,7 +598,7 @@ ntfc_review_reply_text = "\n\n🗨️<b>Відповідь:</b> \n<code>{}</code
 crd_proxy_detected = "Виявлено проксі."
 crd_checking_proxy = "Виконую перевірку проксі..."
 crd_proxy_err = "Не вдалося підключитися до проксі. Переконайтеся, що дані введено вірно."
-crd_proxy_success = "Проксі успішно перевірено! IP-адреса: $YELLOW{}$RESET."
+crd_proxy_success = "Проксі Telegram успішно перевірено."
 crd_acc_get_timeout_err = "Не вдалося завантажити дані облікового запису: перевищено тайм-аут очікування."
 crd_acc_get_unexpected_err = "Сталася непередбачена помилка при отриманні даних облікового запису."
 crd_try_again_in_n_secs = "Спробую знову через {} секунд(-у/-и)..."

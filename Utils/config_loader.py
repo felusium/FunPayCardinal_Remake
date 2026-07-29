@@ -9,7 +9,7 @@ import os
 from Utils.exceptions import (ParamNotFoundError, EmptyValueError, ValueNotValidError, SectionNotFoundError,
                               ConfigParseError, ProductsFileNotFoundError, NoProductVarError,
                               SubCommandAlreadyExists, DuplicateSectionErrorWrapper)
-from Utils.cardinal_tools import hash_password, build_proxy
+from Utils.cardinal_tools import hash_password
 
 
 def check_param(param_name: str, section: SectionProxy, valid_values: list[str | None] | None = None,
@@ -133,12 +133,6 @@ def load_main_config(config_path: str):
             "star5ReplyText": "any+empty",
         },
 
-        "Proxy": {
-            "enable": ["0", "1"],
-            "proxy": "any+empty",
-            "check": ["0", "1"]
-        },
-
         "DisplayCurrency": {
             "currency": ["UAH"],
             "uahRate": "any",
@@ -234,19 +228,6 @@ def load_main_config(config_path: str):
             elif section_name == "Greetings" and param_name == "onlyNewChats" and param_name not in config[
                 section_name]:
                 config.set("Greetings", "onlyNewChats", "0")
-                with open("configs/_main.cfg", "w", encoding="utf-8") as f:
-                    config.write(f)
-            elif section_name == "Proxy" and param_name == "proxy" and param_name not in config[section_name]:
-                if config["Proxy"]["ip"] and config["Proxy"]["port"]:
-                    config.set("Proxy", "proxy", "")
-                else:
-                    config.set("Proxy", "proxy", build_proxy(None, config["Proxy"]["login"],
-                                                             config["Proxy"]["password"], config["Proxy"]["ip"],
-                                                             config["Proxy"]["port"]))
-                config.remove_option(section_name, "login")
-                config.remove_option(section_name, "password")
-                config.remove_option(section_name, "ip")
-                config.remove_option(section_name, "port")
                 with open("configs/_main.cfg", "w", encoding="utf-8") as f:
                     config.write(f)
             elif section_name == "Telegram" and param_name == "proxy" and param_name not in config[section_name]:

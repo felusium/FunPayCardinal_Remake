@@ -1,26 +1,23 @@
+import importlib.util
+import sys
 import time
-from pip._internal.cli.main import main
 
-# todo убрать когда-то
 
-try:
-    import lxml
-except ModuleNotFoundError:
-    main(["install", "-U", "lxml>=5.3.0"])
-except:
-    pass
-try:
-    import bcrypt
-except ModuleNotFoundError:
-    main(["install", "-U", "bcrypt>=4.2.0"])
-except:
-    pass
-try:
-    import socks
-except ModuleNotFoundError:
-    main(["install", "-U", "pysocks>=1.7.1"])
-except:
-    pass
+REQUIRED_RUNTIME_MODULES = {
+    "lxml": "lxml>=5.3.0",
+    "bcrypt": "bcrypt>=4.2.0",
+    "socks": "pysocks>=1.7.1",
+}
+
+missing_packages = [
+    package for module_name, package in REQUIRED_RUNTIME_MODULES.items()
+    if importlib.util.find_spec(module_name) is None
+]
+if missing_packages:
+    print("Не установлены зависимости: " + ", ".join(missing_packages))
+    print("Установи их командой: pip install -r requirements.txt")
+    sys.exit(1)
+
 import Utils.cardinal_tools
 import Utils.config_loader as cfg_loader
 from first_setup import first_setup
@@ -28,7 +25,6 @@ from colorama import Fore, Style
 from Utils.logger import LOGGER_CONFIG
 import logging.config
 import colorama
-import sys
 import os
 import shutil
 from cardinal import Cardinal
