@@ -18,9 +18,11 @@ import sys
 import time
 import re
 import io
+import queue
 import random
 import secrets
 import string
+import threading
 import zipfile
 import psutil
 import telebot
@@ -39,6 +41,29 @@ _ = localizer.translate
 telebot.apihelper.ENABLE_MIDDLEWARE = True
 
 
+def configure_telegram_api_timeouts() -> None:
+    """
+    Ограничивает долгие зависания Telegram API, если текущая версия pyTelegramBotAPI
+    поддерживает соответствующие параметры.
+    """
+    timeout_values = {
+        "CONNECT_TIMEOUT": 8,
+        "READ_TIMEOUT": 20,
+        "connect_timeout": 8,
+        "read_timeout": 20,
+        "SESSION_TIME_TO_LIVE": 300,
+    }
+    for name, value in timeout_values.items():
+        if hasattr(telebot.apihelper, name):
+            try:
+                setattr(telebot.apihelper, name, value)
+            except Exception:
+                logger.debug("Не удалось выставить таймаут Telegram API %s=%s.", name, value, exc_info=True)
+
+
+configure_telegram_api_timeouts()
+
+
 class TGBot:
     def __init__(self, cardinal: Cardinal):
         self.cardinal = cardinal
@@ -46,11 +71,22 @@ class TGBot:
             telebot.apihelper.proxy = {"https": cardinal.MAIN_CFG["Telegram"]["proxy"],
                                        "http": cardinal.MAIN_CFG["Telegram"]["proxy"]}
         self.bot = telebot.TeleBot(self.cardinal.MAIN_CFG["Telegram"]["token"], parse_mode="HTML",
-                                   allow_sending_without_reply=True, num_threads=5)
+                                   allow_sending_without_reply=True, num_threads=10)
 
         self.file_handlers = {}  # хэндлеры, привязанные к получению файла.
         self.attempts = {}  # {user_id: attempts} - попытки авторизации в Telegram ПУ.
         self.init_messages = []  # [(chat_id, message_id)] - список сообщений о запуске TG бота.
+        self.notification_lock = threading.RLock()
+        self.notification_queue: queue.Queue[tuple[str | None, K | None, str, bytes | None, bool]] = queue.Queue(maxsize=500)
+        self.notification_workers = []
+        for index in range(4):
+            worker = threading.Thread(
+                target=self._notification_worker,
+                name=f"tg-notify-{index + 1}",
+                daemon=True
+            )
+            worker.start()
+            self.notification_workers.append(worker)
 
         # {
         #     chat_id: {
@@ -74,6 +110,7 @@ class TGBot:
         self.notification_settings = utils.load_notification_settings()  # настройки уведомлений.
         self.answer_templates = utils.load_answer_templates()  # заготовки ответов.
         self.authorized_users = utils.load_authorized_users()  # авторизированные пользователи.
+        self.normalize_authorized_users()
         self.notification_scope = f"bot:{self.cardinal.MAIN_CFG['Telegram']['token'].split(':', 1)[0]}"
         self.withdraw_sessions = {}
 
@@ -88,6 +125,44 @@ class TGBot:
             utils.NotificationTypes.announcement: 1
         }
         self.migrate_notification_settings()
+
+    def normalize_authorized_users(self) -> None:
+        changed = False
+        for user_id, data in list(self.authorized_users.items()):
+            if not isinstance(data, dict):
+                self.authorized_users[user_id] = {}
+                changed = True
+        if changed:
+            utils.save_authorized_users(self.authorized_users)
+
+    def get_notification_recipient_user_ids(self) -> set[int]:
+        result = set()
+        for user_id, data in self.authorized_users.items():
+            if isinstance(data, dict) and data.get("notifications"):
+                result.add(int(user_id))
+        return result
+
+    def is_notification_recipient(self, user_id: int | str) -> bool:
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            return False
+        return user_id in self.get_notification_recipient_user_ids()
+
+    def toggle_notification_recipient(self, user_id: int | str) -> bool:
+        user_id = int(user_id)
+        enabled = not self.is_notification_recipient(user_id)
+        for current_user_id in list(self.authorized_users.keys()):
+            data = self.authorized_users.setdefault(current_user_id, {})
+            if not isinstance(data, dict):
+                data = {}
+                self.authorized_users[current_user_id] = data
+            if int(current_user_id) == user_id and enabled:
+                data["notifications"] = True
+            else:
+                data.pop("notifications", None)
+        utils.save_authorized_users(self.authorized_users)
+        return enabled
 
     # User states
     def get_state(self, chat_id: int, user_id: int) -> dict | None:
@@ -1613,9 +1688,20 @@ class TGBot:
         self.cbq_handler(self.send_old_mode_help_text, lambda c: c.data == CBT.OLD_MOD_HELP)
         self.cbq_handler(self.empty_callback, lambda c: c.data == CBT.EMPTY)
 
-    def send_notification(self, text: str | None, keyboard: K | None = None,
-                          notification_type: str = utils.NotificationTypes.other, photo: bytes | None = None,
-                          pin: bool = False):
+    def _notification_worker(self):
+        while True:
+            text, keyboard, notification_type, photo, pin = self.notification_queue.get()
+            try:
+                self._send_notification_now(text, keyboard, notification_type, photo, pin)
+            except:
+                logger.error(_("log_tg_notification_error", "queue"))
+                logger.debug("TRACEBACK", exc_info=True)
+            finally:
+                self.notification_queue.task_done()
+
+    def _send_notification_now(self, text: str | None, keyboard: K | None = None,
+                               notification_type: str = utils.NotificationTypes.other, photo: bytes | None = None,
+                               pin: bool = False):
         """
         Отправляет сообщение во все чаты для уведомлений из self.notification_settings.
 
@@ -1629,45 +1715,73 @@ class TGBot:
         if keyboard is not None:
             kwargs["reply_markup"] = keyboard
         to_delete = []
-        notification_settings = self.get_notification_settings()
+        recipients = []
         sent_chats = set()
-        for user_settings in notification_settings.values():
-            if not isinstance(user_settings, dict):
-                continue
-            for chat_id, chat_settings in user_settings.items():
-                if chat_id in sent_chats:
+        with self.notification_lock:
+            notification_settings = self.get_notification_settings()
+            recipient_user_ids = self.get_notification_recipient_user_ids()
+            for user_key, user_settings in notification_settings.items():
+                if not isinstance(user_settings, dict):
                     continue
-                if notification_type != utils.NotificationTypes.important_announcement and \
-                        not bool(chat_settings.get(notification_type)):
-                    continue
-
-                try:
-                    if photo:
-                        msg = self.bot.send_photo(chat_id, photo, text, **kwargs)
-                    else:
-                        msg = self.bot.send_message(chat_id, text, **kwargs)
-
+                if recipient_user_ids:
+                    try:
+                        user_id = int(str(user_key).split(":", 1)[1])
+                    except (IndexError, TypeError, ValueError):
+                        continue
+                    if user_id not in recipient_user_ids:
+                        continue
+                for chat_id, chat_settings in user_settings.items():
+                    if chat_id in sent_chats:
+                        continue
+                    if notification_type != utils.NotificationTypes.important_announcement and \
+                            not bool(chat_settings.get(notification_type)):
+                        continue
+                    recipients.append(chat_id)
                     sent_chats.add(chat_id)
-                    if notification_type == utils.NotificationTypes.bot_start:
-                        self.init_messages.append((msg.chat.id, msg.id))
 
-                    if pin:
-                        self.bot.pin_chat_message(msg.chat.id, msg.id)
-                except Exception as e:
-                    logger.error(_("log_tg_notification_error", chat_id))
-                    logger.debug("TRACEBACK", exc_info=True)
-                    if isinstance(e, ApiTelegramException) and (
-                            e.result.status_code == 403 or e.result.status_code == 400 and
-                            (e.result_json.get('description') in \
-                             ("Bad Request: group chat was upgraded to a supergroup chat",
-                              "Bad Request: chat not found"))):
-                        to_delete.append(chat_id)
-                    continue
+        for chat_id in recipients:
+            try:
+                if photo:
+                    msg = self.bot.send_photo(chat_id, photo, text, **kwargs)
+                else:
+                    msg = self.bot.send_message(chat_id, text, **kwargs)
+
+                if notification_type == utils.NotificationTypes.bot_start:
+                    self.init_messages.append((msg.chat.id, msg.id))
+
+                if pin:
+                    self.bot.pin_chat_message(msg.chat.id, msg.id)
+            except Exception as e:
+                logger.error(_("log_tg_notification_error", chat_id))
+                logger.debug("TRACEBACK", exc_info=True)
+                if isinstance(e, ApiTelegramException) and (
+                        e.result.status_code == 403 or e.result.status_code == 400 and
+                        (e.result_json.get('description') in \
+                         ("Bad Request: group chat was upgraded to a supergroup chat",
+                          "Bad Request: chat not found"))):
+                    to_delete.append(chat_id)
+                continue
         for chat_id in to_delete:
-            for user_settings in notification_settings.values():
-                if isinstance(user_settings, dict) and chat_id in user_settings:
-                    del user_settings[chat_id]
-            utils.save_notification_settings(self.notification_settings)
+            with self.notification_lock:
+                notification_settings = self.get_notification_settings()
+                for user_settings in notification_settings.values():
+                    if isinstance(user_settings, dict) and chat_id in user_settings:
+                        del user_settings[chat_id]
+                utils.save_notification_settings(self.notification_settings)
+
+    def send_notification(self, text: str | None, keyboard: K | None = None,
+                          notification_type: str = utils.NotificationTypes.other, photo: bytes | None = None,
+                          pin: bool = False):
+        """
+        Быстро ставит уведомление в очередь отправки.
+        Медленные ответы Telegram API не должны блокировать обработку FunPay-событий и плагины.
+        """
+        task = (text, keyboard, notification_type, photo, pin)
+        try:
+            self.notification_queue.put_nowait(task)
+        except queue.Full:
+            logger.warning("Очередь Telegram-уведомлений переполнена, отправляю синхронно.")
+            self._send_notification_now(text, keyboard, notification_type, photo, pin)
 
     def add_command_to_menu(self, command: str, help_text: str) -> None:
         """

@@ -193,6 +193,9 @@ def authorized_user_settings(c: Cardinal, user_id: int, offset: int, user_link: 
     if user_link:
         kb.add(B(f"{user_id}", url=f"tg:user?id={user_id}"))
     if not ask_to_delete:
+        receives_notifications = c.telegram.is_notification_recipient(user_id)
+        notify_text = "🔔 Получает уведомления" if receives_notifications else "🔕 Не получает уведомления"
+        kb.add(B(notify_text, None, f"{CBT.TOGGLE_AUTHORIZED_USER_NOTIFICATIONS}:{user_id}:{offset}"))
         kb.add(B(_("au_delete_user"), None, f"{CBT.DELETE_AUTHORIZED_USER}:{user_id}:{offset}"))
     else:
         kb.row(B(_("gl_yes"), None, f"{CBT.CONFIRM_DELETE_AUTHORIZED_USER}:{user_id}:{offset}"),
