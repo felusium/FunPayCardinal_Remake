@@ -730,9 +730,3 @@ CONFIRM_DELETE_AUTHORIZED_USER = "80"
 Callback для удаления авторизованного пользователя.
 Использование: CBT.CONFIRM_DELETE_AUTHORIZED_USER:user_id:offset
 """
-
-TOGGLE_AUTHORIZED_USER_NOTIFICATIONS = "81"
-"""
-Callback для выбора единственного пользователя, который получает Telegram-уведомления.
-Использование: CBT.TOGGLE_AUTHORIZED_USER_NOTIFICATIONS:user_id:offset
-"""

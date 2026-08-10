@@ -31,6 +31,7 @@ mm_new_msg_view = "✉️ Вид спов. про нові повідомлен�
 mm_plugins = "🧩 Плагіни"
 mm_configs = "📁 Конфіги"
 mm_authorized_users = "👥 Авторизовані користувачі"
+mm_proxy = "🌐 Проксі"
 
 # Глобальні перемикачі
 gs_autoraise = "{} Автопідняття"
@@ -343,12 +344,15 @@ withdraw_2fa_required = "FunPay запросив код підтвердженн
 withdraw_failed = "❌ Не вдалося виконати вивід.\n\n<code>{}</code>"
 withdraw_success = "✅ Запит на вивід відправлено.\n\nСписано: <code>{} ₴</code>\nДо отримання: <code>{} ₴</code>\nВідправлено: <code>{}</code>"
 withdraw_cancelled = "Вивід скасовано."
-uah_rate_info = "Поточний курс FunPay: <code>1 ₽ = {} UAH</code>\n\nБот автоматично оновлює курс кожні 180 хвилин.\n\nЩоб змінити вручну, відправ:\n<code>/UAH 0.543</code>\n\nОновити з FunPay зараз:\n<code>/UAH auto</code>"
-uah_rate_changed = "✅ Курс FunPay змінено: <code>1 ₽ = {} UAH</code>\n\nПокупки, баланс і вивід рахуються прямим перерахунком у гривні."
+uah_rate_info = "Поточний курс FunPay: <code>1 ₽ = {} UAH</code>\n\nЩоб змінити вручну, відправ:\n<code>/UAH 0.543</code>\n\nОновити з FunPay зараз:\n<code>/UAH auto</code>"
+uah_rate_changed = "✅ Курс FunPay змінено: <code>1 ₽ = {} UAH</code>\n\nПокупки, баланс і вивід рахуються прямим перерахунком у UAH."
 uah_rate_error = "❌ Неправильний курс. Приклад: <code>/UAH 0.543</code>"
-uah_rate_updating = "Оновлюю курс FunPay з виводу на банківську карту UA..."
-uah_rate_auto_changed = "✅ Курс FunPay оновлено з банківської карти UA: <code>1 ₽ = {} UAH</code>"
-uah_rate_auto_error = "❌ Не вдалося оновити курс з FunPay. Залишив останній збережений курс."
+usdt_rate_info = "Поточний курс FunPay: <code>1 ₽ = {} UAH</code>\n\nЗмінити вручну:\n<code>/usdt 0.543</code>\n\nОновити з FunPay зараз:\n<code>/usdt auto</code>"
+usdt_rate_changed = "✅ Курс FunPay змінено: <code>1 ₽ = {} UAH</code>"
+usdt_rate_updating = "Оновлюю курс FunPay з виводу на банківську карту UA..."
+usdt_rate_auto_changed = "✅ Курс FunPay оновлено з банківської карти UA: <code>1 ₽ = {} UAH</code>"
+usdt_rate_auto_error = "❌ Не вдалося оновити курс з FunPay. Залишив останній збережений курс."
+usdt_rate_error = "❌ Неправильний курс. Приклад: <code>/usdt 0.543</code>"
 
 act_change_golden_key = "Введи golden_key"
 cookie_changed = "✅ golden_key успішно змінено{}.\n"
@@ -471,7 +475,7 @@ hidden_commands_help = """<b>Приховані команди:</b>
 /del_logs - видалити старі лог-файли
 /gkey - змінити golden_key
 /UAH 0.543 - змінити курс FunPay UAH/RUB
-/UAH auto - оновити курс з виводу на карту UA
+/usdt auto - оновити курс з виводу на карту UA
 /update - оновити версію
 /trash - фільтр зайвих повідомлень FunPay
 /old - Список #
@@ -595,7 +599,7 @@ ntfc_review_reply_text = "\n\n🗨️<b>Відповідь:</b> \n<code>{}</code
 crd_proxy_detected = "Виявлено проксі."
 crd_checking_proxy = "Виконую перевірку проксі..."
 crd_proxy_err = "Не вдалося підключитися до проксі. Переконайтеся, що дані введено вірно."
-crd_proxy_success = "Проксі Telegram успішно перевірено."
+crd_proxy_success = "Проксі успішно перевірено! IP-адреса: $YELLOW{}$RESET."
 crd_acc_get_timeout_err = "Не вдалося завантажити дані облікового запису: перевищено тайм-аут очікування."
 crd_acc_get_unexpected_err = "Сталася непередбачена помилка при отриманні даних облікового запису."
 crd_try_again_in_n_secs = "Спробую знову через {} секунд(-у/-и)..."

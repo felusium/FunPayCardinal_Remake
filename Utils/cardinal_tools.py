@@ -130,7 +130,7 @@ def find_trash_filter(text: str, filters: list[str] | None = None) -> str | None
 
 def check_proxy(proxy: dict) -> bool:
     """
-    Проверяет работоспособность Telegram-прокси.
+    Проверяет работоспособность прокси.
 
     :param proxy: словарь с данными прокси.
 
@@ -138,14 +138,12 @@ def check_proxy(proxy: dict) -> bool:
     """
     logger.info(_("crd_checking_proxy"))
     try:
-        response = requests.get("https://api.telegram.org/", proxies=proxy, timeout=10)
-        if response.status_code >= 500:
-            response.raise_for_status()
+        response = requests.get("https://api.ipify.org/", proxies=proxy, timeout=10)
     except:
         logger.error(_("crd_proxy_err"))
         logger.debug("TRACEBACK", exc_info=True)
         return False
-    logger.info(_("crd_proxy_success"))
+    logger.info(_("crd_proxy_success", response.content.decode()))
     return True
 
 
@@ -190,6 +188,45 @@ def build_proxy(scheme: str | None, login: str, password: str, ip: str, port: st
         return f"{scheme}://{login}:{password}@{ip}:{port}"
     else:
         return f"{scheme}://{ip}:{port}"
+
+
+def cache_proxy_dict(proxy_dict: dict[int, str]) -> None:
+    """
+    Кэширует список прокси.
+
+    :param proxy_dict: список прокси.
+    """
+    if not os.path.exists("storage/cache"):
+        os.makedirs("storage/cache")
+
+    with open("storage/cache/proxy_dict.json", "w", encoding="utf-8") as f:
+        f.write(json.dumps(proxy_dict, indent=4))
+
+
+def load_proxy_dict() -> dict[int, str]:
+    """
+    Загружает список прокси.
+
+    :return: список прокси.
+    """
+    if not os.path.exists("storage/cache/proxy_dict.json"):
+        return {}
+
+    with open("storage/cache/proxy_dict.json", "r", encoding="utf-8") as f:
+        proxy = f.read()
+
+        try:
+            proxy = json.loads(proxy)
+            proxy_dict = {}
+            for id_, proxy_str in proxy.items():
+                try:
+                    proxy_dict[int(id_)] = build_proxy(*validate_proxy(proxy_str))
+                except:
+                    logger.debug(f"Не вдалося додати {proxy_str}")
+                    logger.debug("TRACEBACK", exc_info=True)
+        except json.decoder.JSONDecodeError:
+            return {}
+        return proxy_dict
 
 
 def cache_disabled_plugins(disabled_plugins: list[str]) -> None:

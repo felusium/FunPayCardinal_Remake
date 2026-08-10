@@ -8,7 +8,6 @@ DEFAULT_UAH_RATE = 43.5
 DEFAULT_FUNPAY_RUB_TO_USD_RATE = 80.521
 DEFAULT_FUNPAY_UAH_RUB_RATE = 0.543
 DEFAULT_WITHDRAW_COMMISSION_PERCENT = 0.0
-DISPLAY_CURRENCY_SIGN = "₴"
 
 
 def get_display_currency(config: ConfigParser | None) -> str:
@@ -88,15 +87,15 @@ def uah_to_rub(amount: int | float, config: ConfigParser | None = None) -> float
 def format_money(amount: int | float, money_currency, config: ConfigParser | None = None,
                  include_withdraw_commission: bool = False) -> str:
     if is_rub(money_currency):
-        return f"{format_amount(rub_to_uah(amount, config, include_withdraw_commission))} {DISPLAY_CURRENCY_SIGN}"
+        return f"{format_amount(rub_to_uah(amount, config, include_withdraw_commission))} UAH"
     if is_usd(money_currency):
-        return f"{format_amount(float(amount) * get_uah_rate(config))} {DISPLAY_CURRENCY_SIGN}"
-    return f"{format_amount(amount)} {DISPLAY_CURRENCY_SIGN}"
+        return f"{format_amount(float(amount) * get_uah_rate(config))} UAH"
+    return f"{format_amount(amount)} UAH"
 
 
 def format_rub_as_display(amount: int | float, config: ConfigParser | None = None,
                           include_withdraw_commission: bool = False) -> str:
-    return f"{format_amount(rub_to_uah(amount, config, include_withdraw_commission))} {DISPLAY_CURRENCY_SIGN}"
+    return f"{format_amount(rub_to_uah(amount, config, include_withdraw_commission))} UAH"
 
 
 def format_balance_short(balance, config: ConfigParser | None = None) -> str:
