@@ -224,7 +224,7 @@ def old_send_new_msg_notification_handler(c: Cardinal, e: LastChatMessageChanged
     else:
         user = f"👤 {user}"
     text = f"<i><b>{user}: </b></i><code>{utils.escape(str(e.chat))}</code>"
-    kb = keyboards.reply(e.chat.id, e.chat.name, extend=True)
+    kb = keyboards.reply(e.chat.id, e.chat.name, extend=True, quick_actions=True)
     Thread(target=c.telegram.send_notification, args=(text, kb, utils.NotificationTypes.new_message),
            daemon=True).start()
 
@@ -311,7 +311,7 @@ def send_new_msg_notification_handler(c: Cardinal, e: NewMessageEvent) -> None:
         last_by_bot = i.message.by_bot
         last_by_vertex = i.message.by_vertex
         last_badge = i.message.badge
-    kb = keyboards.reply(chat_id, chat_name, extend=True)
+    kb = keyboards.reply(chat_id, chat_name, extend=True, quick_actions=True)
     Thread(target=c.telegram.send_notification, args=(text, kb, utils.NotificationTypes.new_message),
            daemon=True).start()
 
@@ -532,6 +532,7 @@ def setup_event_attributes_handler(c: Cardinal, e: NewOrderEvent, *args):
             break
 
     for i in range(3):
+        matched_lot_names = []
         for lot_name in c.AD_CFG:
             if i == 0:
                 rule = lot_description == lot_name
@@ -541,10 +542,12 @@ def setup_event_attributes_handler(c: Cardinal, e: NewOrderEvent, *args):
                 rule = lot_name in lot_description
 
             if rule:
-                config_section_obj = c.AD_CFG[lot_name]
-                config_section_name = lot_name
-                break
-        if config_section_obj:
+                matched_lot_names.append(lot_name)
+
+        if matched_lot_names:
+            lot_name = max(matched_lot_names, key=len)
+            config_section_obj = c.AD_CFG[lot_name]
+            config_section_name = lot_name
             break
 
     attributes = {"config_section_name": config_section_name, "config_section_obj": config_section_obj,

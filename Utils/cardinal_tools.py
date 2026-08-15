@@ -15,6 +15,7 @@ from datetime import datetime
 import Utils.exceptions
 from Utils import currency
 import itertools
+import threading
 import psutil
 import json
 import sys
@@ -29,6 +30,17 @@ logger = logging.getLogger("FPC.cardinal_tools")
 localizer = Localizer()
 _ = localizer.translate
 
+_products_file_locks: dict[str, threading.Lock] = {}
+_products_file_locks_guard = threading.Lock()
+
+
+def get_products_file_lock(path: str) -> threading.Lock:
+    normalized = os.path.normcase(os.path.abspath(path))
+    with _products_file_locks_guard:
+        if normalized not in _products_file_locks:
+            _products_file_locks[normalized] = threading.Lock()
+        return _products_file_locks[normalized]
+
 
 def count_products(path: str) -> int:
     """
@@ -38,10 +50,11 @@ def count_products(path: str) -> int:
 
     :return: кол-во товара в указанном файле.
     """
-    if not os.path.exists(path):
-        return 0
-    with open(path, "r", encoding="utf-8") as f:
-        products = f.read()
+    with get_products_file_lock(path):
+        if not os.path.exists(path):
+            return 0
+        with open(path, "r", encoding="utf-8") as f:
+            products = f.read()
     products = products.split("\n")
     products = list(itertools.filterfalse(lambda el: not el, products))
     return len(products)
@@ -408,28 +421,29 @@ def get_products(path: str, amount: int = 1) -> list[list[str] | int] | None:
 
     :return: [[Товар/-ы], оставшееся кол-во товара]
     """
-    with open(path, "r", encoding="utf-8") as f:
-        products = f.read()
+    with get_products_file_lock(path):
+        with open(path, "r", encoding="utf-8") as f:
+            products = f.read()
 
-    products = products.split("\n")
+        products = products.split("\n")
 
-    # Убираем пустые элементы
-    products = list(itertools.filterfalse(lambda el: not el, products))
+        # Убираем пустые элементы
+        products = list(itertools.filterfalse(lambda el: not el, products))
 
-    if not products:
-        raise Utils.exceptions.NoProductsError(path)
+        if not products:
+            raise Utils.exceptions.NoProductsError(path)
 
-    elif len(products) < amount:
-        raise Utils.exceptions.NotEnoughProductsError(path, len(products), amount)
+        elif len(products) < amount:
+            raise Utils.exceptions.NotEnoughProductsError(path, len(products), amount)
 
-    got_products = products[:amount]
-    save_products = products[amount:]
-    amount = len(save_products)
+        got_products = products[:amount]
+        save_products = products[amount:]
+        amount = len(save_products)
 
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("\n".join(save_products))
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("\n".join(save_products))
 
-    return [got_products, amount]
+        return [got_products, amount]
 
 
 def add_products(path: str, products: list[str], at_zero_position=False):
@@ -440,14 +454,15 @@ def add_products(path: str, products: list[str], at_zero_position=False):
     :param products: товары.
     :param at_zero_position: добавить товары в начало товарного файла.
     """
-    if not at_zero_position:
-        with open(path, "a", encoding="utf-8") as f:
-            f.write("\n" + "\n".join(products))
-    else:
-        with open(path, "r", encoding="utf-8") as f:
-            text = f.read()
-        with open(path, "w", encoding="utf-8") as f:
-            f.write("\n".join(products) + "\n" + text)
+    with get_products_file_lock(path):
+        if not at_zero_position:
+            with open(path, "a", encoding="utf-8") as f:
+                f.write("\n" + "\n".join(products))
+        else:
+            with open(path, "r", encoding="utf-8") as f:
+                text = f.read()
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("\n".join(products) + "\n" + text)
 
 
 def safe_text(text: str):

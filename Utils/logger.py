@@ -4,6 +4,8 @@
 from colorama import Fore, Back, Style
 import logging.handlers
 import logging
+import atexit
+import queue
 import re
 
 
@@ -99,6 +101,7 @@ class CLILoggerFormatter(logging.Formatter):
         msg = add_colors(msg)
         msg = msg.replace("$RESET", LOG_COLORS[record.levelno])
         record.msg = msg
+        record.args = None
         log_format = CLI_LOG_FORMAT.replace("$RESET", Style.RESET_ALL + LOG_COLORS[record.levelno])
         formatter = logging.Formatter(log_format, CLI_TIME_FORMAT)
         return redact_sensitive(formatter.format(record))
@@ -115,61 +118,48 @@ class FileLoggerFormatter(logging.Formatter):
         msg = redact_sensitive(record.getMessage())
         msg = CLEAR_RE.sub("", msg)
         record.msg = msg
+        record.args = None
         formatter = logging.Formatter(FILE_LOG_FORMAT, FILE_TIME_FORMAT)
         return redact_sensitive(formatter.format(record))
 
 
-LOGGER_CONFIG = {
-    "version": 1,
-    "handlers": {
-        "file_handler": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "level": "DEBUG",
-            "formatter": "file_formatter",
-            "filename": "logs/log.log",
-            "maxBytes": 5 * 1024 * 1024,  # 5 MB
-            "backupCount": 25,
-            "encoding": "utf-8"
-        },
+LOGGER_NAMES = ["main", "FunPayAPI", "FPC", "TGBot"]
 
-        "cli_handler": {
-            "class": "logging.StreamHandler",
-            "level": "INFO",
-            "formatter": "cli_formatter"
-        }
-    },
 
-    "formatters": {
-        "file_formatter": {
-            "()": "Utils.logger.FileLoggerFormatter"
-        },
+class _QueueHandler(logging.handlers.QueueHandler):
+    def prepare(self, record: logging.LogRecord) -> logging.LogRecord:
+        return record
 
-        "cli_formatter": {
-            "()": "Utils.logger.CLILoggerFormatter"
-        }
-    },
 
-    "loggers": {
-        "main": {
-            "handlers": ["cli_handler", "file_handler"],
-            "level": "DEBUG"
-        },
-        "FunPayAPI": {
-            "handlers": ["cli_handler", "file_handler"],
-            "level": "DEBUG"
-        },
-        "FPC": {
-            "handlers": ["cli_handler", "file_handler"],
-            "level": "DEBUG"
-        },
-        "TGBot": {
-            "handlers": ["cli_handler", "file_handler"],
-            "level": "DEBUG"
-        },
-        "TeleBot": {
-            "handlers": ["file_handler"],
-            "level": "ERROR",
-            "propagate": "False"
-        }
-    }
-}
+def configure_logging() -> logging.handlers.QueueListener:
+    cli_handler = logging.StreamHandler()
+    cli_handler.setLevel(logging.INFO)
+    cli_handler.setFormatter(CLILoggerFormatter())
+    cli_handler.addFilter(lambda record: record.name != "TeleBot")
+
+    file_handler = logging.handlers.RotatingFileHandler(
+        filename="logs/log.log",
+        maxBytes=5 * 1024 * 1024,  # 5 MB
+        backupCount=25,
+        encoding="utf-8"
+    )
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(FileLoggerFormatter())
+
+    log_queue = queue.SimpleQueue()
+    queue_handler = _QueueHandler(log_queue)
+
+    for name in LOGGER_NAMES:
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(queue_handler)
+
+    telebot_logger = logging.getLogger("TeleBot")
+    telebot_logger.setLevel(logging.ERROR)
+    telebot_logger.propagate = False
+    telebot_logger.addHandler(queue_handler)
+
+    listener = logging.handlers.QueueListener(log_queue, cli_handler, file_handler, respect_handler_level=True)
+    listener.start()
+    atexit.register(listener.stop)
+    return listener

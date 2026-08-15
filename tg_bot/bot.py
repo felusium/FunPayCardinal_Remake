@@ -83,10 +83,7 @@ class TGBot:
             "help": "cmd_help",
         }
         self.visible_commands = ("menu", "profile", "help")
-        self.__default_notification_settings = {
-            utils.NotificationTypes.ad: 1,
-            utils.NotificationTypes.announcement: 1
-        }
+        self.__default_notification_settings = {}
         self.migrate_notification_settings()
 
     # User states
@@ -1505,11 +1502,9 @@ class TGBot:
         result = self.toggle_notification(chat_id, notification_type, c.from_user.id)
         logger.info(_("log_notification_switched", c.from_user.username, c.from_user.id,
                       notification_type, c.message.chat.id, result))
-        keyboard = kb.announcements_settings if notification_type in [utils.NotificationTypes.announcement,
-                                                                      utils.NotificationTypes.ad] \
-            else kb.notifications_settings
         self.bot.edit_message_reply_markup(c.message.chat.id, c.message.id,
-                                           reply_markup=keyboard(self.cardinal, c.message.chat.id, c.from_user.id))
+                                           reply_markup=kb.notifications_settings(self.cardinal, c.message.chat.id,
+                                                                                  c.from_user.id))
         self.bot.answer_callback_query(c.id)
 
     def open_settings_section(self, c: CallbackQuery):

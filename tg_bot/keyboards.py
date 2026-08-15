@@ -281,26 +281,6 @@ def notifications_settings(c: Cardinal, chat_id: int, user_id: int | str | None 
     return kb
 
 
-def announcements_settings(c: Cardinal, chat_id: int, user_id: int | str | None = None):
-    """
-    Генерирует клавиатуру настроек уведомлений объявлений.
-
-    :param c: объект кардинала.
-    :param chat_id: ID чата, в котором вызвана клавиатура.
-
-    :return: объект клавиатуры настроек уведомлений объявлений.
-    """
-    p = f"{CBT.SWITCH_TG_NOTIFICATIONS}:{chat_id}"
-    n = NotificationTypes
-
-    def l(nt):
-        return '🔔' if c.telegram.is_notification_enabled(chat_id, nt, user_id) else '🔕'
-
-    kb = K() \
-        .add(B(_("an_an", l(n.announcement)), None, f"{p}:{n.announcement}")) \
-        .add(B(_("an_ad", l(n.ad)), None, f"{p}:{n.ad}"))
-    return kb
-
 
 def blacklist_settings(c: Cardinal) -> K:
     """
@@ -560,7 +540,8 @@ def new_order(order_id: str, username: str, node_id: int,
     return kb
 
 
-def reply(node_id: int, username: str, again: bool = False, extend: bool = False) -> K:
+def reply(node_id: int, username: str, again: bool = False, extend: bool = False,
+          quick_actions: bool = False) -> K:
     """
     Генерирует клавиатуру для отправки сообщения в чат FunPay.
 
@@ -568,12 +549,18 @@ def reply(node_id: int, username: str, again: bool = False, extend: bool = False
     :param username: никнейм пользователя, с которым ведется переписка.
     :param again: заменить текст "Отправить" на "Отправить еще"?
     :param extend: добавить ли кнопку "Расширить"?
+    :param quick_actions: добавить быстрые кнопки шаблонов и открытия чата.
 
     :return: объект клавиатуры для отправки сообщения в чат FunPay.
     """
     bts = [B(_("msg_reply2") if again else _("msg_reply"), None, f"{CBT.SEND_FP_MESSAGE}:{node_id}:{username}")]
+    if quick_actions:
+        bts.append(B(_("msg_templates"), None,
+                     f"{CBT.TMPLT_LIST_ANS_MODE}:0:{node_id}:{username}:{int(again)}:{int(extend)}"))
     if extend:
         bts.append(B(_("msg_more"), None, f"{CBT.EXTEND_CHAT}:{node_id}:{username}"))
+    if quick_actions:
+        bts.append(B(f"🌐 {username}", url=f"https://funpay.com/chat/?node={node_id}"))
     kb = K() \
         .row(*bts)
     return kb
